@@ -1,0 +1,23 @@
+{
+  "name": "john-and-daddys-amazing-game",
+  "description": "John & Daddy's Amazing Game",
+  "version": "0.0.1-pre79",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kneilb/john1.git"
+  },
+  "keywords": [],
+  "author": "John Letchford & Neil Burningham",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kneilb/john1/issues"
+  },
+  "homepage": "https://github.com/kneilb/john1",
+  "dependencies": {
+    "canvas": "^2.6.1",
+    "roughjs": "^4.3.1"
+  }
+}
