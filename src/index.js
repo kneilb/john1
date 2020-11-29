@@ -12,6 +12,7 @@ const CANVAS_HEIGHT = 768;
 
 const PLAYER_HEIGHT = 80;
 const PLAYER_WIDTH = 80;
+const PLAYER_MOVEMENT = 40;
 
 class Player {
     constructor(colour) {
@@ -29,25 +30,26 @@ class Player {
     }
 
     moveUp() {
-        this.y -= 10;
+        this.y -= PLAYER_MOVEMENT;
     }
 
     moveDown() {
-        this.y += 10;
+        this.y += PLAYER_MOVEMENT;
     }
 
     moveLeft() {
-        this.x -= 10;
+        this.x -= PLAYER_MOVEMENT;
     }
 
     moveRight() {
-        this.x += 10;
+        this.x += PLAYER_MOVEMENT;
     }
 }
 
 (async () => {
 
     const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+    const canvasContext = canvas.getContext('2d');
     const roughCanvas = rough.canvas(canvas);
 
     const clientCode = await fs.promises.readFile('./src/client.js', 'utf8');
@@ -61,7 +63,7 @@ class Player {
             response.writeHead(200, { 'Content-Type': 'text/html' });
             response.end(
                 //'<meta http-equiv="refresh" content="1;" />' +
-                '<img src="' + canvas.toDataURL() + '" />' +
+                '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
                 '<button id="btn-up" type="">Up</button>' +
                 '<button id="btn-down" type="">Down</button>' +
                 '<button id="btn-left" type="">Left</button>' +
@@ -96,16 +98,16 @@ class Player {
                         p1.moveRight();
                         break;
                     default:
-                        console.log('SPACESHIPS!!!1')
+                        console.log('SPACESHIPS!!!1');
                         break;
                 }
 
-                //roughCanvas.clear();
+                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
                 p1.draw(roughCanvas);
             });
             // console.log(request)
             response.writeHead(200, { 'Content-Type': 'text/plain' });
-            response.end();
+            response.end(canvas.toDataURL());
         }
     }).listen(LISTEN_PORT, LISTEN_ADDR);
 
