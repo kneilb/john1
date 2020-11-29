@@ -1,6 +1,9 @@
+// TODO: timed GET to update canvas so we can see other players movements (null key?!)
+
 async function sendKeyToServer(key) {
     try {
         const response = await fetch('/', {
+            credentials: 'include',
             method: 'post',
             body: key
         });
