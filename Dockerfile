@@ -1,9 +1,19 @@
-FROM centos/nodejs-8-centos7
+FROM node:15.3
 
+# Install prereqs
+RUN apt-get update && \
+    apt-get -y install \
+        build-essential \
+        libcairo2-dev \
+        libpango1.0-dev \
+        libjpeg-dev \
+        libgif-dev \
+        librsvg2-dev
+
+# Install app
 WORKDIR /app
-COPY --chown=daemon:daemon src/ .
+COPY --chown=daemon:daemon ./ .
+RUN npm install .
 
-RUN npm install --save roughjs
-
-ENTRYPOINT ["/opt/rh/rh-nodejs8/root/usr/bin/node"]
-CMD ["/app/index.js"]
+ENTRYPOINT ["node"]
+CMD ["/app/src/index.js"]
