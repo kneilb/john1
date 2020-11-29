@@ -1,4 +1,6 @@
 // TODO: timed GET to update canvas so we can see other players movements (null key?!)
+// TODO: refresh on push of "exit"
+// TODO: refresh on push of "choose a colour"
 
 async function sendKeyToServer(key) {
     try {
@@ -41,12 +43,12 @@ window.addEventListener('keypress', (event) => {
     }
 }, false);
 
-const BUTTON_IDS = ['up', 'down', 'left', 'right'];
+const BUTTON_IDS = ['up', 'down', 'left', 'right', 'red', 'green', 'yellow', 'blue', 'exit'];
 
-for (buttonId of BUTTON_IDS) {
+for (let buttonId of BUTTON_IDS) {
     const element = document.getElementById(buttonId);
 
-    element.addEventListener('click', (event) => {
+    element && element.addEventListener('click', (event) => {
         sendKeyToServer(event.path[0].id);
     });
 }

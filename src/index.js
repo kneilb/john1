@@ -76,41 +76,61 @@ function getPlayerCookie(request) {
         console.log(`${request.method}: ${playerId}`);
 
         if (request.method == 'GET') {
+            response.writeHead(200, { 'Content-Type': 'text/html' });
+            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
             if (playerId !== null && players.has(playerId)) {
-                response.writeHead(200, { 'Content-Type': 'text/html' });
+
+                for (let [_, player] of players) {
+                     player.draw(roughCanvas);
+                }
+
+                // TODO: exit button?!
+                response.end(
+                    '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
+                    '<button id="up" type="">Up</button>' +
+                    '<button id="down" type="">Down</button>' +
+                    '<button id="left" type="">Left</button>' +
+                    '<button id="right" type="">Right</button>' +
+                    '<button id="exit" type="">Exit</button>' +
+                    '<script>' +
+                    clientCode +
+                    '</script>'
+                );
             }
             else {
-                // TODO: allow a choice...
-                const playerId = 'blue';
-
-                response.writeHead(200, {
-                    'Content-Type': 'text/html',
-                    'Set-Cookie': `player=${playerId}`
-                });
-                players.set(playerId, new Player(playerId));
+                response.end(
+                    '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
+                    '<button id="red" type="">Red</button>' +
+                    '<button id="green" type="">Green</button>' +
+                    '<button id="yellow" type="">Yellow</button>' +
+                    '<button id="blue" type="">Blue</button>' +
+                    '<script>' +
+                    clientCode +
+                    '</script>'
+                );
             }
-
-            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-            for (let [_, player] of players) {
-                 player.draw(roughCanvas);
-            }
-
-            response.end(
-                '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
-                '<button id="up" type="">Up</button>' +
-                '<button id="down" type="">Down</button>' +
-                '<button id="left" type="">Left</button>' +
-                '<button id="right" type="">Right</button>' +
-                '<script>' +
-                clientCode +
-                '</script>'
-            );
         }
         else if (request.method == 'POST') {
-            if (playerId === null) {
-                console.log(`POST without player cookie - arg!`);
-                response.writeHead(409);
-                response.end();
+            if (playerId === null || !players.has(playerId)) {
+                console.log(`POST without player matching player cookie - create new player!!`);
+
+                let body = [];
+                request.on('data', (chunk) => {
+                    body.push(chunk);
+                }).on('end', () => {
+                    const newPlayerId = Buffer.concat(body).toString();
+                    console.log(`newPlayerId: ${newPlayerId}`);
+
+                    players.set(newPlayerId, new Player(newPlayerId));
+
+                    response.writeHead(200, {
+                        'Content-Type': 'text/html',
+                        'Set-Cookie': `player=${newPlayerId}`
+                    });
+                    response.end(canvas.toDataURL());
+                });
+
                 return;
             }
 
@@ -126,6 +146,8 @@ function getPlayerCookie(request) {
             request.on('data', (chunk) => {
                 body.push(chunk);
             }).on('end', () => {
+                response.writeHead(200, { 'Content-Type': 'image/png' });
+
                 body = Buffer.concat(body).toString();
 
                 // TODO: work out who it's from, map to correct player!
@@ -147,6 +169,13 @@ function getPlayerCookie(request) {
                         console.log('RIGHT');
                         player.moveRight();
                         break;
+                    case 'exit':
+                        console.log('EXIT');
+                        response.writeHead(200, {
+                            'Content-Type': 'image/png',
+                            'Set-Cookie': `player=${playerId}; expires=Thu, 01 Jan 1970 00:00:00 GMT;`
+                        });
+                        break;
                     default:
                         console.log('SPACESHIPS!!!1');
                         break;
@@ -157,7 +186,6 @@ function getPlayerCookie(request) {
                     player.draw(roughCanvas);
                 }
 
-                response.writeHead(200, { 'Content-Type': 'image/png' });
                 response.end(canvas.toDataURL());
             });
         }
