@@ -63,10 +63,10 @@ class Player {
             response.writeHead(200, { 'Content-Type': 'text/html' });
             response.end(
                 '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
-                '<button id="btn-up" type="">Up</button>' +
-                '<button id="btn-down" type="">Down</button>' +
-                '<button id="btn-left" type="">Left</button>' +
-                '<button id="btn-right" type="">Right</button>' +
+                '<button id="up" type="">Up</button>' +
+                '<button id="down" type="">Down</button>' +
+                '<button id="left" type="">Left</button>' +
+                '<button id="right" type="">Right</button>' +
                 '<script>' +
                 clientCode +
                 '</script>'

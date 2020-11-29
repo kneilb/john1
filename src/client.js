@@ -38,13 +38,12 @@ window.addEventListener('keypress', (event) => {
     }
 }, false);
 
-const BUTTONS = ['up', 'down', 'left', 'right'];
+const BUTTON_IDS = ['up', 'down', 'left', 'right'];
 
-for (button of BUTTONS) {
-    const elementId = `btn-${button}`;
-    const element = document.getElementById(elementId);
+for (buttonId of BUTTON_IDS) {
+    const element = document.getElementById(buttonId);
 
-    element.addEventListener('click', async _ => {
-        sendKeyToServer(button);
+    element.addEventListener('click', (event) => {
+        sendKeyToServer(event.path[0].id);
     });
 }
