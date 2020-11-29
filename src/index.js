@@ -62,7 +62,6 @@ class Player {
         if (request.method == 'GET') {
             response.writeHead(200, { 'Content-Type': 'text/html' });
             response.end(
-                //'<meta http-equiv="refresh" content="1;" />' +
                 '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
                 '<button id="btn-up" type="">Up</button>' +
                 '<button id="btn-down" type="">Down</button>' +
@@ -104,10 +103,10 @@ class Player {
 
                 canvasContext.clearRect(0, 0, canvas.width, canvas.height);
                 p1.draw(roughCanvas);
+
+                response.writeHead(200, { 'Content-Type': 'image/png' });
+                response.end(canvas.toDataURL());
             });
-            // console.log(request)
-            response.writeHead(200, { 'Content-Type': 'text/plain' });
-            response.end(canvas.toDataURL());
         }
     }).listen(LISTEN_PORT, LISTEN_ADDR);
 

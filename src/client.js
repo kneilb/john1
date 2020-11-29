@@ -20,51 +20,31 @@ window.addEventListener('keypress', (event) => {
     switch (event.key) {
         case 'w':
         case 'W':
-            sendKeyToServer("up");
+            sendKeyToServer('up');
             break;
         case 's':
         case 'S':
-            sendKeyToServer("down");
+            sendKeyToServer('down');
             break;
         case 'a':
         case 'A':
-            sendKeyToServer("left");
+            sendKeyToServer('left');
             break;
         case 'd':
         case 'D':
-            sendKeyToServer("right");
+            sendKeyToServer('right');
             break;
 
     }
 }, false);
 
-// const KEYS = ['up', 'down', 'left', 'right'];
+const BUTTONS = ['up', 'down', 'left', 'right'];
 
-// for (key of KEYS) {
-//     elementId = `btn-${key}`;
-//     var element = document.getElementById(elementId);
+for (button of BUTTONS) {
+    const elementId = `btn-${button}`;
+    const element = document.getElementById(elementId);
 
-//     element.addEventListener('click', async _ => {
-//         await(sendKeyToServer(key));
-//     });
-// }
-
-const up = document.getElementById('btn-up');
-up.addEventListener('click', async _ => {
-    await sendKeyToServer("up");
-});
-
-const down = document.getElementById('btn-down');
-down.addEventListener('click', async _ => {
-    await sendKeyToServer("down");
-});
-
-const left = document.getElementById('btn-left');
-left.addEventListener('click', async _ => {
-    await sendKeyToServer("left");
-});
-
-const right = document.getElementById('btn-right');
-right.addEventListener('click', async _ => {
-    await sendKeyToServer("right");
-});
+    element.addEventListener('click', async _ => {
+        sendKeyToServer(button);
+    });
+}
