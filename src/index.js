@@ -62,8 +62,6 @@ function getPlayerCookie(request) {
 
 
 (async () => {
-    const clientCode = await fs.promises.readFile('./src/client.js', 'utf8');
-
     const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
     const canvasContext = canvas.getContext('2d');
     const roughCanvas = rough.canvas(canvas);
@@ -77,8 +75,6 @@ function getPlayerCookie(request) {
 
         if (request.method == 'GET') {
             response.writeHead(200, { 'Content-Type': 'text/html' });
-
-
             response.end(canvas.toDataURL());
         }
         else if (request.method == 'POST') {
@@ -118,40 +114,35 @@ function getPlayerCookie(request) {
             }).on('end', () => {
                 response.writeHead(200, { 'Content-Type': 'text/html' });
 
-                body = Buffer.concat(body).toString();
+                const key = Buffer.concat(body).toString();
+                console.log(`${playerId} -> ${key}`);
 
-                // TODO: work out who it's from, map to correct player!
-                // cookie!?
-                switch (body) {
+                switch (key) {
                     case 'up':
-                        console.log('UP');
                         player.moveUp();
                         break;
                     case 'down':
-                        console.log('DOWN');
                         player.moveDown();
                         break;
                     case 'left':
-                        console.log('LEFT');
                         player.moveLeft();
                         break;
                     case 'right':
-                        console.log('RIGHT');
                         player.moveRight();
                         break;
                     case 'exit':
-                        console.log('EXIT');
+                        players.delete(playerId);
+
                         response.writeHead(200, {
-                            'Content-Type': 'image/png',
+                            'Content-Type': 'text/html',
                             'Set-Cookie': `player=${playerId}; expires=Thu, 01 Jan 1970 00:00:00 GMT;`
                         });
-                        break;
-                    default:
-                        console.log('SPACESHIPS!!!1');
+
                         break;
                 }
 
                 canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
                 for (let [_, player] of players) {
                     player.draw(roughCanvas);
                 }

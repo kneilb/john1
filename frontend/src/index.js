@@ -1,16 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+
+
 import './index.css';
-
-import Welcome from './welcome.jsx'
-import Game from './game.jsx'
-
-// <Welcome />
+import App from './app.jsx'
 
 ReactDOM.render(
     <div>
-
-        <Game />
+        <App />
     </div>,
     document.getElementById('root')
 );

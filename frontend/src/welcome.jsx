@@ -13,8 +13,26 @@ function Chooser(props) {
 
 export default function Welcome(props) {
 
-    function handleClick(id) {
-        console.log(`I like ${id} fish!`);
+    // TODO: factor out
+    async function sendToServer(key) {
+        try {
+            const response = await fetch('/', {
+                credentials: 'include',
+                method: 'post',
+                body: key
+            });
+    
+            return await response.text();
+        }
+        catch (error) {
+            console.error(`Error: ${error}`);
+        }
+    }
+
+    async function handleClick(id) {
+        console.log(`I chose to play as ${id}`);
+
+        sendToServer(id);
     }
 
     return (

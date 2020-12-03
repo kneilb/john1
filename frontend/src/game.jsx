@@ -16,11 +16,15 @@ export default function Game(props) {
     const [canvasSource, setCanvasSource] = useState();
 
     useEffect(() => {
-        const image = getFromServer();
+        async function fetchData() {
+            const image = await getFromServer();
 
-        setCanvasSource(image);
+            setCanvasSource(image);
+        }
+        fetchData();
     }, []);
 
+    // TODO: factor out
     async function getFromServer() {
         try {
             const response = await fetch('/', {
@@ -35,6 +39,7 @@ export default function Game(props) {
         }
     }
 
+    // TODO: factor out
     async function sendToServer(key) {
         try {
             const response = await fetch('/', {
@@ -58,7 +63,6 @@ export default function Game(props) {
         setCanvasSource(newSource);
     }
 
-    // TODO: get data to go in the image...
     return (
         <div>
             <img id='canvas' alt='game goes here!' src={canvasSource} />
