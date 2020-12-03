@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from 'react';
+import {useCookies} from 'react-cookie';
 
 function Action(props) {
     return (
@@ -14,6 +15,7 @@ function Action(props) {
 export default function Game(props) {
 
     const [canvasSource, setCanvasSource] = useState();
+    const [cookies, addCookie, removeCookie] = useCookies(['player']);
 
     useEffect(() => {
         async function fetchData() {
@@ -63,6 +65,13 @@ export default function Game(props) {
         setCanvasSource(newSource);
     }
 
+    async function handleExit(id) {
+        console.log('EXIT');
+
+        await sendToServer('exit');
+        removeCookie('player');
+    }
+
     return (
         <div>
             <img id='canvas' alt='game goes here!' src={canvasSource} />
@@ -70,7 +79,7 @@ export default function Game(props) {
             <Action id='down' name='Down' onClick={handleClick} />
             <Action id='left' name='Left' onClick={handleClick} />
             <Action id='right' name='Right' onClick={handleClick} />
-            <Action id='exit' name='Exit' onClick={handleClick} />
+            <Action id='exit' name='Exit' onClick={handleExit} />
         </div>
     );
 }
