@@ -77,39 +77,9 @@ function getPlayerCookie(request) {
 
         if (request.method == 'GET') {
             response.writeHead(200, { 'Content-Type': 'text/html' });
-            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (playerId !== null && players.has(playerId)) {
 
-                for (let [_, player] of players) {
-                     player.draw(roughCanvas);
-                }
-
-                // TODO: exit button?!
-                response.end(
-                    '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
-                    '<button id="up" type="">Up</button>' +
-                    '<button id="down" type="">Down</button>' +
-                    '<button id="left" type="">Left</button>' +
-                    '<button id="right" type="">Right</button>' +
-                    '<button id="exit" type="">Exit</button>' +
-                    '<script>' +
-                    clientCode +
-                    '</script>'
-                );
-            }
-            else {
-                response.end(
-                    '<img id="canvas" src="' + canvas.toDataURL() + '" />' +
-                    '<button id="red" type="">Red</button>' +
-                    '<button id="green" type="">Green</button>' +
-                    '<button id="yellow" type="">Yellow</button>' +
-                    '<button id="blue" type="">Blue</button>' +
-                    '<script>' +
-                    clientCode +
-                    '</script>'
-                );
-            }
+            response.end(canvas.toDataURL());
         }
         else if (request.method == 'POST') {
             if (playerId === null || !players.has(playerId)) {
@@ -146,7 +116,7 @@ function getPlayerCookie(request) {
             request.on('data', (chunk) => {
                 body.push(chunk);
             }).on('end', () => {
-                response.writeHead(200, { 'Content-Type': 'image/png' });
+                response.writeHead(200, { 'Content-Type': 'text/html' });
 
                 body = Buffer.concat(body).toString();
 
