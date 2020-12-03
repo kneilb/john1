@@ -19,7 +19,7 @@ export default function Welcome(props) {
     // TODO: factor out
     async function choosePlayer(key) {
         try {
-            const response = await fetch('/api/choose', {
+            const response = await fetch('/api/player', {
                 credentials: 'include',
                 method: 'post',
                 body: key

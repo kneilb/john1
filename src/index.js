@@ -70,41 +70,48 @@ function getPlayerCookie(request) {
     let players = new Map();
 
     http.createServer((request, response) => {
-        const playerId = getPlayerCookie(request);
-
-        console.log(`${request.method}: ${request.path} ${playerId}`);
+        console.log(`${request.method}: ${request.url}`);
 
         if (request.method == 'GET') {
             response.writeHead(200, { 'Content-Type': 'image/png' });
             response.end(canvas.toDataURL());
         }
-        else if (request.method == 'POST') {
-            if (playerId === null || !players.has(playerId)) {
-                console.log(`POST without player matching player cookie - create new player!!`);
+        else if (request.method == 'POST' && request.url == '/api/player') {
+            let body = [];
+            request.on('data', (chunk) => {
+                body.push(chunk);
+            }).on('end', () => {
+                const newPlayerId = Buffer.concat(body).toString();
+                console.log(`newPlayerId: ${newPlayerId}`);
 
-                let body = [];
-                request.on('data', (chunk) => {
-                    body.push(chunk);
-                }).on('end', () => {
-                    const newPlayerId = Buffer.concat(body).toString();
-                    console.log(`newPlayerId: ${newPlayerId}`);
+                if (players.has(newPlayerId)) {
+                    console.log(`Requested player ${newPlayerId}, which is already in use!`);
+                    response.writeHead(409);
+                    response.end();
+                    return;
+                }
 
-                    const player = new Player(newPlayerId);
-                    players.set(newPlayerId, player);
-                    player.draw(roughCanvas);
+                console.log(`Creating new player: ${newPlayerId}!!`);
 
-                    response.writeHead(200, {
-                        'Content-Type': 'text/html',
-                        'Set-Cookie': `player=${newPlayerId}`
-                    });
-                    response.end(canvas.toDataURL());
+                const player = new Player(newPlayerId);
+                players.set(newPlayerId, player);
+                player.draw(roughCanvas);
+
+                response.writeHead(200, {
+                    'Content-Type': 'text/html',
+                    'Set-Cookie': `player=${newPlayerId}`
                 });
+                response.end();
+            });
 
-                return;
-            }
+            return;
+        }
+        else if (request.method == 'POST' && request.url == '/api/game') {
+            // TODO: move into URL?
+            const playerId = getPlayerCookie(request);
 
             if (!players.has(playerId)) {
-                console.log(`POST with player ${playerId}, which doesn't exist!`);
+                console.log(`Requested to control player ${playerId}, which doesn't exist!`);
                 response.writeHead(409);
                 response.end();
                 return;
@@ -135,6 +142,7 @@ function getPlayerCookie(request) {
                         player.moveRight();
                         break;
                     case 'exit':
+                        // TODO: should be a DELETE of /player/X
                         players.delete(playerId);
 
                         response.writeHead(200, {
@@ -153,6 +161,9 @@ function getPlayerCookie(request) {
 
                 response.end(canvas.toDataURL());
             });
+        }
+        else {
+            console.log('Unrecognised request...');
         }
     }).listen(LISTEN_PORT, LISTEN_ADDR);
 
