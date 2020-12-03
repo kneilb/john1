@@ -71,10 +71,11 @@ function getPlayerCookie(request) {
 
     http.createServer((request, response) => {
         const playerId = getPlayerCookie(request);
-        console.log(`${request.method}: ${playerId}`);
+
+        console.log(`${request.method}: ${request.path} ${playerId}`);
 
         if (request.method == 'GET') {
-            response.writeHead(200, { 'Content-Type': 'text/html' });
+            response.writeHead(200, { 'Content-Type': 'image/png' });
             response.end(canvas.toDataURL());
         }
         else if (request.method == 'POST') {
@@ -88,7 +89,9 @@ function getPlayerCookie(request) {
                     const newPlayerId = Buffer.concat(body).toString();
                     console.log(`newPlayerId: ${newPlayerId}`);
 
-                    players.set(newPlayerId, new Player(newPlayerId));
+                    const player = new Player(newPlayerId);
+                    players.set(newPlayerId, player);
+                    player.draw(roughCanvas);
 
                     response.writeHead(200, {
                         'Content-Type': 'text/html',
@@ -106,6 +109,7 @@ function getPlayerCookie(request) {
                 response.end();
                 return;
             }
+
             const player = players.get(playerId);
 
             let body = [];

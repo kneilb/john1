@@ -24,12 +24,12 @@ export default function Game(props) {
             setCanvasSource(image);
         }
         fetchData();
-    }, []);
+    }, [setCanvasSource]);
 
     // TODO: factor out
     async function getFromServer() {
         try {
-            const response = await fetch('/', {
+            const response = await fetch('/api/game', {
                 credentials: 'include',
                 method: 'get'
             });
@@ -44,7 +44,7 @@ export default function Game(props) {
     // TODO: factor out
     async function sendToServer(key) {
         try {
-            const response = await fetch('/', {
+            const response = await fetch('/api/game', {
                 credentials: 'include',
                 method: 'post',
                 body: key

@@ -1,4 +1,5 @@
 import React from 'react';
+import {useCookies} from 'react-cookie';
 
 function Chooser(props) {
     return (
@@ -13,10 +14,12 @@ function Chooser(props) {
 
 export default function Welcome(props) {
 
+    const [cookies, addCookie, removeCookie] = useCookies(['player']);
+
     // TODO: factor out
-    async function sendToServer(key) {
+    async function choosePlayer(key) {
         try {
-            const response = await fetch('/', {
+            const response = await fetch('/api/choose', {
                 credentials: 'include',
                 method: 'post',
                 body: key
@@ -32,7 +35,8 @@ export default function Welcome(props) {
     async function handleClick(id) {
         console.log(`I chose to play as ${id}`);
 
-        sendToServer(id);
+        await choosePlayer(id);
+        addCookie('player', id);
     }
 
     return (
