@@ -18,6 +18,7 @@
   "homepage": "https://github.com/kneilb/john1",
   "dependencies": {
     "canvas": "^2.6.1",
+    "express": "^4.17.1",
     "roughjs": "^4.3.1"
   }
 }

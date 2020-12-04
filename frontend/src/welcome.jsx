@@ -1,5 +1,4 @@
 import React from 'react';
-import {useCookies} from 'react-cookie';
 
 function Chooser(props) {
     return (
@@ -14,29 +13,27 @@ function Chooser(props) {
 
 export default function Welcome(props) {
 
-    const [cookies, addCookie, removeCookie] = useCookies(['player']);
+    async function handleClick(id) {
+        console.log(`I want to play as ${id}`);
 
-    // TODO: factor out
-    async function choosePlayer(key) {
+        // TODO: could ignore 409 conflict & just carry on, taking control of the existing player!!
+        // add auth via a randomly generated cookie, not just the player ID...!?
         try {
             const response = await fetch('/api/player', {
                 credentials: 'include',
                 method: 'post',
-                body: key
+                headers: { 'Content-Type': 'text/plain' },
+                body: id
             });
     
-            return await response.text();
+            const text = await response.text();
+            console.log(text);
+            props.onSelect(id);
         }
         catch (error) {
             console.error(`Error: ${error}`);
+            props.onError(id);
         }
-    }
-
-    async function handleClick(id) {
-        console.log(`I chose to play as ${id}`);
-
-        await choosePlayer(id);
-        addCookie('player', id);
     }
 
     return (

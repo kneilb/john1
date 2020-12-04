@@ -1,5 +1,4 @@
 import React, {useState, useEffect} from 'react';
-import {useCookies} from 'react-cookie';
 
 function Action(props) {
     return (
@@ -15,7 +14,6 @@ function Action(props) {
 export default function Game(props) {
 
     const [canvasSource, setCanvasSource] = useState();
-    const [cookies, addCookie, removeCookie] = useCookies(['player']);
 
     useEffect(() => {
         async function fetchData() {
@@ -29,10 +27,7 @@ export default function Game(props) {
     // TODO: factor out
     async function getFromServer() {
         try {
-            const response = await fetch('/api/game', {
-                credentials: 'include',
-                method: 'get'
-            });
+            const response = await fetch('/api/game');
     
             return await response.text();
         }
@@ -42,11 +37,12 @@ export default function Game(props) {
     }
 
     // TODO: factor out
-    async function sendToServer(key) {
+    async function sendToServer(playerId, key) {
         try {
-            const response = await fetch('/api/game', {
+            const response = await fetch(`/api/game/${playerId}`, {
                 credentials: 'include',
                 method: 'post',
+                headers: { 'Content-Type': 'text/plain' },
                 body: key
             });
     
@@ -60,7 +56,7 @@ export default function Game(props) {
     async function handleClick(id) {
         console.log(`click? ${id}`);
 
-        const newSource = await sendToServer(id);
+        const newSource = await sendToServer(props.playerId, id);
 
         setCanvasSource(newSource);
     }
@@ -69,7 +65,6 @@ export default function Game(props) {
         console.log('EXIT');
 
         await sendToServer('exit');
-        removeCookie('player');
     }
 
     return (
