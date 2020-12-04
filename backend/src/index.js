@@ -3,7 +3,6 @@ const { createCanvas } = require('canvas');
 const rough = require('roughjs');
 
 const express = require('express');
-var bodyParser = require('body-parser');
 
 const LISTEN_PORT = 1337;
 
@@ -47,7 +46,6 @@ class Player {
 }
 
 const app = express();
-app.use(bodyParser.text());
 
 const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
@@ -56,16 +54,23 @@ const roughCanvas = rough.canvas(canvas);
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
 
+function redrawPlayingField() {
+    canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let [_, player] of players) {
+        player.draw(roughCanvas);
+    }
+}
+
 app.get('/api/game', (request, response) => {
     console.log(`${request.method}: ${request.url}`);
-    response.send(canvas.toDataURL());
+    response.type('image/png').send(canvas.toDataURL());
 });
 
-app.post('/api/player', (request, response) => {
-    console.log(`${request.method}: ${request.url} ${request.body}`);
+app.post('/api/game/:playerId', (request, response) => {
+    console.log(`${request.method}: ${request.url}`);
 
-    const newPlayerId = request.body;
-    console.log(`newPlayerId: ${newPlayerId}`);
+    const newPlayerId = request.params.playerId;
 
     if (players.has(newPlayerId)) {
         console.log(`Requested player ${newPlayerId}, which is already in use!`);
@@ -82,10 +87,28 @@ app.post('/api/player', (request, response) => {
     response.sendStatus(200);
 });
 
-app.post('/api/game/:playerId', (request, response) => {
+app.delete('/api/game/:playerId', (request, response) => {
+    console.log(`${request.method}: ${request.url}`);
+
+    const playerIdToDelete = request.params.playerId;
+
+    if (!players.has(playerIdToDelete)) {
+        console.log(`Requested to delete player ${playerIdToDelete}, which does not exist!`);
+        response.sendStatus(404);
+        return;
+    }
+
+    players.delete(playerIdToDelete);
+    redrawPlayingField();
+
+    response.sendStatus(200);
+});
+
+app.put('/api/game/:playerId/:control', (request, response) => {
     console.log(`${request.method}: ${request.url}`);
 
     const playerId = request.params.playerId;
+    const key = request.params.control;
 
     if (!players.has(playerId)) {
         console.log(`Requested to control player ${playerId}, which doesn't exist!`);
@@ -93,10 +116,7 @@ app.post('/api/game/:playerId', (request, response) => {
         return;
     }
 
-    const key = request.body;
     const player = players.get(playerId);
-
-    console.log(`${playerId} -> ${key}`);
 
     switch (key) {
         case 'up':
@@ -111,22 +131,15 @@ app.post('/api/game/:playerId', (request, response) => {
         case 'right':
             player.moveRight();
             break;
-        case 'exit':
-            // TODO: should be a DELETE of /player/X
-            players.delete(playerId);
-            response.sendStatus(200);
+        case 'gobble':
+            player.gobble();
             return;
         default:
-            console.log('SPACESHIPS?!?!');
             response.sendStatus(404);
             return;
     }
 
-    canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let [_, player] of players) {
-        player.draw(roughCanvas);
-    }
+    redrawPlayingField();
 
     response.type('image/png').send(canvas.toDataURL());
 });

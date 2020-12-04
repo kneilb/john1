@@ -17,7 +17,7 @@ export default function Game(props) {
 
     useEffect(() => {
         async function fetchData() {
-            const image = await getFromServer();
+            const image = await getGameCanvas();
 
             setCanvasSource(image);
         }
@@ -25,10 +25,10 @@ export default function Game(props) {
     }, [setCanvasSource]);
 
     // TODO: factor out
-    async function getFromServer() {
+    async function getGameCanvas() {
         try {
             const response = await fetch('/api/game');
-    
+
             return await response.text();
         }
         catch (error) {
@@ -37,16 +37,30 @@ export default function Game(props) {
     }
 
     // TODO: factor out
-    async function sendToServer(playerId, key) {
+    async function sendCommand(playerId, control) {
+        try {
+            const response = await fetch(`/api/game/${playerId}/${control}`, {
+                method: 'put'
+            });
+
+            if (response.status !== 200) {
+                return;
+            }
+
+            return await response.text();
+        }
+        catch (error) {
+            console.error(`Error: ${error}`);
+        }
+    }
+
+    async function deletePlayer(playerId) {
         try {
             const response = await fetch(`/api/game/${playerId}`, {
-                credentials: 'include',
-                method: 'post',
-                headers: { 'Content-Type': 'text/plain' },
-                body: key
+                method: 'delete'
             });
-    
-            return await response.text();
+
+            return response.status;
         }
         catch (error) {
             console.error(`Error: ${error}`);
@@ -56,15 +70,22 @@ export default function Game(props) {
     async function handleClick(id) {
         console.log(`click? ${id}`);
 
-        const newSource = await sendToServer(props.playerId, id);
-
-        setCanvasSource(newSource);
+        const newSource = await sendCommand(props.playerId, id);
+        if (newSource) {
+            setCanvasSource(newSource);
+        }
     }
 
     async function handleExit(id) {
         console.log('EXIT');
 
-        await sendToServer('exit');
+        const status = await deletePlayer(props.playerId);
+        if (status !== 200) {
+            console.log(status);
+            return;
+        }
+
+        props.onExit();
     }
 
     return (

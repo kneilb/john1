@@ -16,16 +16,20 @@ export default function Welcome(props) {
     async function handleClick(id) {
         console.log(`I want to play as ${id}`);
 
-        // TODO: could ignore 409 conflict & just carry on, taking control of the existing player!!
-        // add auth via a randomly generated cookie, not just the player ID...!?
+        // TODO: can ignore 409 conflict & just carry on, taking control of the existing player!!
+        // TODO: The "feature" outlined above is kinda handy for testing - hence the commented out code.
+        // TODO: add auth via a randomly generated cookie...!?
         try {
-            const response = await fetch('/api/player', {
-                credentials: 'include',
-                method: 'post',
-                headers: { 'Content-Type': 'text/plain' },
-                body: id
+            const response = await fetch(`/api/game/${id}`, {
+                method: 'post'
             });
-    
+
+            // if (response.status !== 200) {
+            //     console.error(`Error: ${response.statusText}`);
+            //     props.onError(id);
+            //     return;
+            // }
+
             const text = await response.text();
             console.log(text);
             props.onSelect(id);
