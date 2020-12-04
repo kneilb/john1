@@ -3,6 +3,7 @@
   "description": "John & Daddy's Amazing Game",
   "version": "0.0.1-pre79",
   "scripts": {
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

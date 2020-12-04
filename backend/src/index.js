@@ -82,14 +82,14 @@ app.post('/api/player', (request, response) => {
     response.sendStatus(200);
 });
 
-app.post('/api/game/:playerId/:control', (request, response) => {
+app.post('/api/game/:playerId', (request, response) => {
     console.log(`${request.method}: ${request.url}`);
 
     const playerId = request.params.playerId;
 
     if (!players.has(playerId)) {
         console.log(`Requested to control player ${playerId}, which doesn't exist!`);
-        response.sendStatus(409);
+        response.sendStatus(404);
         return;
     }
 
