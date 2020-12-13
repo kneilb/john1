@@ -24,6 +24,13 @@ export default function Game(props) {
         fetchData();
     }, [setCanvasSource]);
 
+    useEffect(() => {
+        const addKeyHandler = () => {
+            window.addEventListener('keyup', handleKey);
+        }
+        addKeyHandler();
+    }, []);
+
     // TODO: factor out
     async function getGameCanvas() {
         try {
@@ -37,9 +44,9 @@ export default function Game(props) {
     }
 
     // TODO: factor out
-    async function sendCommand(playerId, control) {
+    async function sendCommand(command) {
         try {
-            const response = await fetch(`/api/game/${playerId}/${control}`, {
+            const response = await fetch(`/api/game/${props.playerId}/${command}`, {
                 method: 'put'
             });
 
@@ -47,7 +54,8 @@ export default function Game(props) {
                 return;
             }
 
-            return await response.text();
+            const newSource = await response.text();
+            setCanvasSource(newSource);
         }
         catch (error) {
             console.error(`Error: ${error}`);
@@ -70,10 +78,7 @@ export default function Game(props) {
     async function handleClick(id) {
         console.log(`click? ${id}`);
 
-        const newSource = await sendCommand(props.playerId, id);
-        if (newSource) {
-            setCanvasSource(newSource);
-        }
+        await sendCommand(id);
     }
 
     async function handleExit(id) {
@@ -86,6 +91,32 @@ export default function Game(props) {
         }
 
         props.onExit();
+    }
+
+    async function handleKey(event) {
+        event.preventDefault();
+
+        console.log(event.key);
+        switch (event.key) {
+            case 'w':
+            case 'ArrowUp':
+                await sendCommand('up');
+                break;
+            case 's':
+            case 'ArrowDown':
+                await sendCommand('down');
+                break;
+            case 'a':
+            case 'ArrowLeft':
+                await sendCommand('left');
+                break;
+            case 'd':
+            case 'ArrowRight':
+                await sendCommand('right');
+                break;
+            default:
+                break;
+        }
     }
 
     return (
