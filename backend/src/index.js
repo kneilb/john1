@@ -8,11 +8,53 @@ const PLAYER_HEIGHT = 40;
 const PLAYER_WIDTH = 40;
 const PLAYER_MOVEMENT = 40;
 
+const RUBY_RADIUS = 20;
+
+class Island {
+    // belongs to a player
+    // has their machine
+    // has a key
+}
+
+class Platform {
+}
+
+class Machine {
+}
+
+class Key {
+    // Dropped on death of player
+}
+
+class Gate {
+    // Needs 3 keys to open
+    // Leads to the island with the ruby
+}
+
+class Ruby {
+    // Dropped on death of player
+    // Must be taken back to the player's machine in order to win
+
+    constructor() {
+        this.x = 220;
+        this.y = 220;
+    }
+
+    draw(roughCanvas) {
+        roughCanvas.circle(this.x, this.y, 
+            RUBY_RADIUS, {
+            fill: 'red',
+            fillStyle: 'cross-hatch'
+        });
+    }
+}
+
 class Player {
     constructor(colour) {
         this.x = 0;
         this.y = 0;
         this.colour = colour;
+        this.ruby = null;
     }
 
     draw(roughCanvas) {
@@ -23,23 +65,43 @@ class Player {
         );
     }
 
+    moveRubyIfPresent() {
+        if (this.ruby !== null) {
+            this.ruby.x = this.x + 20;
+            this.ruby.y = this.y + 20;
+        }
+    }
+
+    pickUpRubyIfPresent() {
+        if (ruby && (ruby.x == this.x + 20) && (ruby.y == this.y + 20)) {
+            this.ruby = ruby;
+        }
+    }
+
     moveUp() {
         this.y -= PLAYER_MOVEMENT;
+        this.pickUpRubyIfPresent();
+        this.moveRubyIfPresent();
     }
 
     moveDown() {
         this.y += PLAYER_MOVEMENT;
+        this.pickUpRubyIfPresent();
+        this.moveRubyIfPresent();
     }
 
     moveLeft() {
         this.x -= PLAYER_MOVEMENT;
+        this.pickUpRubyIfPresent();
+        this.moveRubyIfPresent();
     }
 
     moveRight() {
         this.x += PLAYER_MOVEMENT;
+        this.pickUpRubyIfPresent();
+        this.moveRubyIfPresent();
     }
 }
-
 
 const io = require('socket.io')(HTTP_LISTEN_PORT, {
     cors: {
@@ -52,6 +114,8 @@ const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
 const roughCanvas = require('roughjs').canvas(canvas);
 
+let ruby = new Ruby();
+
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
 
@@ -61,6 +125,8 @@ function redrawPlayingField() {
     for (let [_, player] of players) {
         player.draw(roughCanvas);
     }
+
+    ruby.draw(roughCanvas);
 }
  
 io.on('connection', (client) => {
@@ -76,7 +142,7 @@ io.on('connection', (client) => {
     
         const player = new Player(playerId);
         players.set(playerId, player);
-        player.draw(roughCanvas);
+        redrawPlayingField();
     });
 
     client.on('leave', (playerId) => {
