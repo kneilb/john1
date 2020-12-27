@@ -67,6 +67,13 @@ class Key {
             this.player = player;
         }
     }
+
+    tryMove(player) {
+        if (player === this.player) {
+            this.x = player.x;
+            this.y = player.y;
+        }
+    }
 }
 
 class Gate {
@@ -174,34 +181,30 @@ class Player {
     
         this.x = x;
         this.y = y;
+
+        ruby.tryPickup(this);
+        ruby.tryMove(this);
+
+        for (let key of keys) {
+            key.tryPickup(this);
+            key.tryMove(this);
+        }
     }
 
     moveUp() {
         this.tryMove(this.x, this.y - 1);
-
-        ruby.tryPickup(this);
-        ruby.tryMove(this);
     }
 
     moveDown() {
         this.tryMove(this.x, this.y + 1);
-
-        ruby.tryPickup(this);
-        ruby.tryMove(this);
     }
 
     moveLeft() {
         this.tryMove(this.x - 1, this.y);
-
-        ruby.tryPickup(this);
-        ruby.tryMove(this);
     }
 
     moveRight() {
         this.tryMove(this.x + 1, this.y);
-
-        ruby.tryPickup(this);
-        ruby.tryMove(this);
     }
 }
 
