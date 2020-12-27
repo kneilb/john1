@@ -13,10 +13,11 @@ const RUBY_RADIUS = 20;
 class Island {
     // belongs to a player
     // has their machine
-    // has a key
+    // a key spawns here
 }
 
 class Platform {
+    // connects islands
 }
 
 class Machine {
@@ -24,6 +25,7 @@ class Machine {
 
 class Key {
     // Dropped on death of player
+    // 1 spawns on each player's island
 }
 
 class Gate {
@@ -38,6 +40,7 @@ class Ruby {
     constructor() {
         this.x = 220;
         this.y = 220;
+        this.player = null;
     }
 
     draw(roughCanvas) {
@@ -54,7 +57,6 @@ class Player {
         this.x = 0;
         this.y = 0;
         this.colour = colour;
-        this.ruby = null;
     }
 
     draw(roughCanvas) {
@@ -66,15 +68,15 @@ class Player {
     }
 
     moveRubyIfPresent() {
-        if (this.ruby !== null) {
-            this.ruby.x = this.x + 20;
-            this.ruby.y = this.y + 20;
+        if (ruby.player === this) {
+            ruby.x = this.x + 20;
+            ruby.y = this.y + 20;
         }
     }
 
     pickUpRubyIfPresent() {
         if (ruby && (ruby.x == this.x + 20) && (ruby.y == this.y + 20)) {
-            this.ruby = ruby;
+            ruby.player = this;
         }
     }
 
