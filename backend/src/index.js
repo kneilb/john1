@@ -61,16 +61,39 @@ class Key {
             this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 1)
         );
     }
+
+    tryPickup(player) {
+        if ((this.x === player.x) && (this.y === player.y)) {
+            this.player = player;
+        }
+    }
 }
 
 class Gate {
     // Needs 3 keys to open
     // Leads to the island with the ruby
     constructor() {
-        this.x = 0;
-        this.y = 0;
+        this.x = 10;
+        this.y = 15;
     }
- }
+
+    checkLocation(x, y) {
+        return x === this.x && y === this.y;
+    }
+
+    canPass(player) {
+        return keys.every((key) => key.player == player);
+    }
+
+    draw(roughCanvas) {
+        roughCanvas.ellipse(
+            (this.x * GRID_SIZE) + (GRID_SIZE / 2), (this.y * GRID_SIZE) + (GRID_SIZE / 2),
+            GRID_SIZE, GRID_SIZE, {
+            fill: 'brown',
+            fillStyle: 'dots'
+        });
+    }
+}
 
 class Ruby {
     // Dropped on death of player
@@ -139,42 +162,44 @@ class Player {
         }
     }
 
-    moveUp() {
-        if (this.y <= Y_MIN) {
+    tryMove(x, y) {
+        if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
             return;
         }
+    
+        if (gate.checkLocation(x, y) && !gate.canPass(this)) {
+            console.log(`${this.colour}: NONE SHALL PASS!!!1`);
+            return;
+        }
+    
+        this.x = x;
+        this.y = y;
+    }
 
-        this.y -= 1;
+    moveUp() {
+        this.tryMove(this.x, this.y - 1);
+
         ruby.tryPickup(this);
         ruby.tryMove(this);
     }
 
     moveDown() {
-        if (this.y >= Y_MAX) {
-            return;
-        }
+        this.tryMove(this.x, this.y + 1);
 
-        this.y += 1;
         ruby.tryPickup(this);
         ruby.tryMove(this);
     }
 
     moveLeft() {
-        if (this.x <= X_MIN) {
-            return;
-        }
+        this.tryMove(this.x - 1, this.y);
 
-        this.x -= 1;
         ruby.tryPickup(this);
         ruby.tryMove(this);
     }
 
     moveRight() {
-        if (this.x >= X_MAX) {
-            return;
-        }
+        this.tryMove(this.x + 1, this.y);
 
-        this.x += 1;
         ruby.tryPickup(this);
         ruby.tryMove(this);
     }
@@ -191,9 +216,9 @@ const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
 const roughCanvas = require('roughjs').canvas(canvas);
 
-let ruby = new Ruby();
-
 let keys = [new Key(1), new Key(2), new Key(3)];
+let gate = new Gate();
+let ruby = new Ruby();
 
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
@@ -206,6 +231,8 @@ function redrawPlayingField() {
     }
 
     ruby.draw(roughCanvas);
+
+    gate.draw(roughCanvas);
 
     for (let key of keys) {
         key.draw(roughCanvas);
