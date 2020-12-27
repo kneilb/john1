@@ -52,6 +52,10 @@ export default function Game(props) {
         }
 
         document.addEventListener('keyup', handleKey);
+
+        return () => {
+            document.removeEventListener('keyup', handleKey);
+        };
     }, [props.playerId]);
 
     function handleClick(id) {
