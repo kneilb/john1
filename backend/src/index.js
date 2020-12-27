@@ -8,7 +8,7 @@ const PLAYER_HEIGHT = 40;
 const PLAYER_WIDTH = 40;
 const PLAYER_MOVEMENT = 40;
 
-const RUBY_RADIUS = 20;
+const RUBY_DIAMETER = 20;
 
 class Island {
     // belongs to a player
@@ -45,7 +45,7 @@ class Ruby {
 
     draw(roughCanvas) {
         roughCanvas.circle(this.x, this.y, 
-            RUBY_RADIUS, {
+            RUBY_DIAMETER, {
             fill: 'red',
             fillStyle: 'cross-hatch'
         });
