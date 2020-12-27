@@ -4,11 +4,14 @@ const CLIENT_PORT = 3000;
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
 
-const PLAYER_HEIGHT = 40;
-const PLAYER_WIDTH = 40;
-const PLAYER_MOVEMENT = 40;
+const X_MIN = 0;
+const X_MAX = 24;
+const Y_MIN = 0;
+const Y_MAX = 17;
+const GRID_SIZE = 40;
 
-const RUBY_DIAMETER = 20;
+const RUBY_DIAMETER = (GRID_SIZE / 2);
+const KEY_CIRCLE_DIAMETER = (GRID_SIZE / 4);
 
 class Island {
     // belongs to a player
@@ -26,25 +29,75 @@ class Machine {
 class Key {
     // Dropped on death of player
     // 1 spawns on each player's island
+    // Must be taken to the gate to unlock it
+    constructor(id) {
+        this.id = id;
+        this.x = id;
+        this.y = id;
+        this.player = null;
+    }
+
+    draw(roughCanvas) {
+        roughCanvas.circle(
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
+            KEY_CIRCLE_DIAMETER, {
+            fill: 'yellow',
+            fillStyle: 'cross-hatch'
+        });
+        roughCanvas.line(
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2)
+        );
+        roughCanvas.line(
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 1)
+        );
+        roughCanvas.line(
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 7/4), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 7/4), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/4)
+        );
+        roughCanvas.line(
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
+            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 1)
+        );
+    }
 }
 
 class Gate {
     // Needs 3 keys to open
     // Leads to the island with the ruby
-}
+    constructor() {
+        this.x = 0;
+        this.y = 0;
+    }
+ }
 
 class Ruby {
     // Dropped on death of player
     // Must be taken back to the player's machine in order to win
 
     constructor() {
-        this.x = 220;
-        this.y = 220;
+        this.x = 4;
+        this.y = 4;
         this.player = null;
     }
 
+    tryPickup(player) {
+        if ((this.x === player.x) && (this.y === player.y)) {
+            this.player = player;
+        }
+    }
+
+    tryMove(player) {
+        if (player === this.player) {
+            this.x = player.x;
+            this.y = player.y;
+        }
+    }
+
     draw(roughCanvas) {
-        roughCanvas.circle(this.x, this.y, 
+        roughCanvas.circle(
+            (this.x * GRID_SIZE) + (GRID_SIZE / 2), (this.y * GRID_SIZE) + (GRID_SIZE / 2),
             RUBY_DIAMETER, {
             fill: 'red',
             fillStyle: 'cross-hatch'
@@ -61,8 +114,14 @@ class Player {
 
     draw(roughCanvas) {
         roughCanvas.rectangle(
-            this.x, this.y,
-            PLAYER_WIDTH, PLAYER_HEIGHT,
+            (this.x * GRID_SIZE), (this.y * GRID_SIZE),
+            GRID_SIZE, GRID_SIZE,
+            { roughness: 2.8, fill: this.colour }
+        );
+
+        roughCanvas.rectangle(
+            (this.x * GRID_SIZE), (this.y * GRID_SIZE),
+            GRID_SIZE, GRID_SIZE,
             { roughness: 2.8, fill: this.colour }
         );
     }
@@ -81,27 +140,43 @@ class Player {
     }
 
     moveUp() {
-        this.y -= PLAYER_MOVEMENT;
-        this.pickUpRubyIfPresent();
-        this.moveRubyIfPresent();
+        if (this.y <= Y_MIN) {
+            return;
+        }
+
+        this.y -= 1;
+        ruby.tryPickup(this);
+        ruby.tryMove(this);
     }
 
     moveDown() {
-        this.y += PLAYER_MOVEMENT;
-        this.pickUpRubyIfPresent();
-        this.moveRubyIfPresent();
+        if (this.y >= Y_MAX) {
+            return;
+        }
+
+        this.y += 1;
+        ruby.tryPickup(this);
+        ruby.tryMove(this);
     }
 
     moveLeft() {
-        this.x -= PLAYER_MOVEMENT;
-        this.pickUpRubyIfPresent();
-        this.moveRubyIfPresent();
+        if (this.x <= X_MIN) {
+            return;
+        }
+
+        this.x -= 1;
+        ruby.tryPickup(this);
+        ruby.tryMove(this);
     }
 
     moveRight() {
-        this.x += PLAYER_MOVEMENT;
-        this.pickUpRubyIfPresent();
-        this.moveRubyIfPresent();
+        if (this.x >= X_MAX) {
+            return;
+        }
+
+        this.x += 1;
+        ruby.tryPickup(this);
+        ruby.tryMove(this);
     }
 }
 
@@ -118,6 +193,8 @@ const roughCanvas = require('roughjs').canvas(canvas);
 
 let ruby = new Ruby();
 
+let keys = [new Key(1), new Key(2), new Key(3)];
+
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
 
@@ -129,6 +206,10 @@ function redrawPlayingField() {
     }
 
     ruby.draw(roughCanvas);
+
+    for (let key of keys) {
+        key.draw(roughCanvas);
+    }
 }
  
 io.on('connection', (client) => {
