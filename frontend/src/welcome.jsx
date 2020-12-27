@@ -1,4 +1,5 @@
 import React from 'react';
+import api from './api';
 
 function Chooser(props) {
     return (
@@ -20,9 +21,7 @@ export default function Welcome(props) {
         // TODO: The "feature" outlined above is kinda handy for testing - hence the commented out code.
         // TODO: add auth via a randomly generated cookie...!?
         try {
-            const response = await fetch(`/api/game/${id}`, {
-                method: 'post'
-            });
+            api.join(id);
 
             // if (response.status !== 200) {
             //     console.error(`Error: ${response.statusText}`);
@@ -30,8 +29,8 @@ export default function Welcome(props) {
             //     return;
             // }
 
-            const text = await response.text();
-            console.log(text);
+            //const text = await response.text();
+            //console.log(text);
             props.onSelect(id);
         }
         catch (error) {

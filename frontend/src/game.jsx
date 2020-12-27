@@ -1,53 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import openSocket from 'socket.io-client';
-
-const socket = openSocket('http://localhost:1338');
-
-function subscribeToTimer(cb) {
-    socket.on('timer', timestamp => cb(null, timestamp));
-    socket.emit('subscribeToTimer', 1000);
-}
-
-async function getGameCanvas() {
-    try {
-        const response = await fetch('/api/game');
-
-        return await response.text();
-    }
-    catch (error) {
-        console.error(`ERROR!!!1 ${error}`);
-    }
-}
-
-async function sendCommand(playerId, command) {
-    try {
-        const response = await fetch(`/api/game/${playerId}/${command}`, {
-            method: 'put'
-        });
-
-        if (response.status !== 200) {
-            return;
-        }
-
-        return await response.text();
-    }
-    catch (error) {
-        console.error(`ERROR!!!1 ${error}`);
-    }
-}
-
-async function deletePlayer(playerId) {
-    try {
-        const response = await fetch(`/api/game/${playerId}`, {
-            method: 'delete'
-        });
-
-        return response.status;
-    }
-    catch (error) {
-        console.error(`ERROR!!!1 ${error}`);
-    }
-}
+import api from './api';
 
 function Action(props) {
     return (
@@ -65,16 +17,11 @@ export default function Game(props) {
     const [canvasSource, setCanvasSource] = useState();
 
     useEffect(() => {
-        async function fetchData() {
-            const image = await getGameCanvas();
-
-            setCanvasSource(image);
-        }
-        fetchData();
-    }, [setCanvasSource]);
+        api.refresh(setCanvasSource);
+    }, []);
 
     useEffect(() => {
-        async function handleKey(event) {
+        function handleKey(event) {
             let command = null;
     
             console.log(event.key);
@@ -100,30 +47,23 @@ export default function Game(props) {
             }
     
             if (command !== null) {
-                const newCanvasSource = await sendCommand(props.playerId, command);
-                setCanvasSource(newCanvasSource);
+                api.action(props.playerId, command, setCanvasSource);
             }
         }
 
         document.addEventListener('keyup', handleKey);
     }, [props.playerId]);
 
-    async function handleClick(id) {
+    function handleClick(id) {
         console.log(`click? ${id}`);
 
-        const newCanvasSource = await sendCommand(props.playerId, id);
-        setCanvasSource(newCanvasSource);
+        api.action(props.playerId, id, setCanvasSource);
     }
 
-    async function handleExit(id) {
+    function handleExit(id) {
         console.log('EXIT');
 
-        const status = await deletePlayer(props.playerId);
-        if (status !== 200) {
-            console.log(status);
-            return;
-        }
-
+        api.leave(props.playerId);
         props.onExit();
     }
 

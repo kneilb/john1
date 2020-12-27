@@ -1,10 +1,5 @@
-const { createCanvas } = require('canvas');
-const rough = require('roughjs');
-const express = require('express');
-const socketIo = require('socket.io');
-
 const HTTP_LISTEN_PORT = 1337;
-const SOCKET_IO_LISTEN_PORT = 1338;
+const CLIENT_PORT = 3000;
 
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
@@ -45,12 +40,17 @@ class Player {
     }
 }
 
-const app = express();
-const io = socketIo();
 
-const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+const io = require('socket.io')(HTTP_LISTEN_PORT, {
+    cors: {
+        origin: `http://localhost:${CLIENT_PORT}`,
+        methods: ['GET', 'POST']
+    }
+});
+
+const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
-const roughCanvas = rough.canvas(canvas);
+const roughCanvas = require('roughjs').canvas(canvas);
 
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
@@ -62,100 +62,72 @@ function redrawPlayingField() {
         player.draw(roughCanvas);
     }
 }
-
-app.get('/api/game', (request, response) => {
-    console.log(`${request.method}: ${request.url}`);
-    response.type('image/png').send(canvas.toDataURL());
-});
-
-app.post('/api/game/:playerId', (request, response) => {
-    console.log(`${request.method}: ${request.url}`);
-
-    const newPlayerId = request.params.playerId;
-
-    if (players.has(newPlayerId)) {
-        console.log(`Requested player ${newPlayerId}, which is already in use!`);
-        response.sendStatus(409);
-        return;
-    }
-
-    console.log(`Creating new player: ${newPlayerId}!!`);
-
-    const player = new Player(newPlayerId);
-    players.set(newPlayerId, player);
-    player.draw(roughCanvas);
-
-    response.sendStatus(200);
-});
-
-app.delete('/api/game/:playerId', (request, response) => {
-    console.log(`${request.method}: ${request.url}`);
-
-    const playerIdToDelete = request.params.playerId;
-
-    if (!players.has(playerIdToDelete)) {
-        console.log(`Requested to delete player ${playerIdToDelete}, which does not exist!`);
-        response.sendStatus(404);
-        return;
-    }
-
-    players.delete(playerIdToDelete);
-    redrawPlayingField();
-
-    response.sendStatus(200);
-});
-
-app.put('/api/game/:playerId/:control', (request, response) => {
-    console.log(`${request.method}: ${request.url}`);
-
-    const playerId = request.params.playerId;
-    const key = request.params.control;
-
-    if (!players.has(playerId)) {
-        console.log(`Requested to control player ${playerId}, which doesn't exist!`);
-        response.sendStatus(404);
-        return;
-    }
-
-    const player = players.get(playerId);
-
-    switch (key) {
-        case 'up':
-            player.moveUp();
-            break;
-        case 'down':
-            player.moveDown();
-            break;
-        case 'left':
-            player.moveLeft();
-            break;
-        case 'right':
-            player.moveRight();
-            break;
-        case 'gobble':
-            player.gobble();
-            return;
-        default:
-            response.sendStatus(404);
-            return;
-    }
-
-    redrawPlayingField();
-
-    response.type('image/png').send(canvas.toDataURL());
-});
-
-app.listen(HTTP_LISTEN_PORT, () => {
-    console.log(`Server running at http://localhost:${HTTP_LISTEN_PORT}/`);
-});
-
+ 
 io.on('connection', (client) => {
-    client.on('subscribeToTimer', (interval) => {
-        console.log('client is subscribing to timer with interval ', interval);
-        setInterval(() => {
-            client.emit('timer', new Date());
-        }, interval);
+    client.on('join', (playerId) => {
+        console.log(`join: ${playerId}`);
+
+        if (players.has(playerId)) {
+            console.log(`Requested player ${playerId}, which is already in use!`);
+            return;
+        }
+    
+        console.log(`Creating new player: ${playerId}!!`);
+    
+        const player = new Player(playerId);
+        players.set(playerId, player);
+        player.draw(roughCanvas);
+    });
+
+    client.on('leave', (playerId) => {
+        console.log(`leave: ${playerId}`)
+
+        if (!players.has(playerId)) {
+            console.log(`Requested to delete player ${playerId}, which does not exist!`);
+            return;
+        }
+    
+        players.delete(playerId);
+        redrawPlayingField();
+    });
+
+    client.on('refresh', () => {
+        console.log('client requested refresh');
+        client.emit('refresh', canvas.toDataURL());
+    });
+
+    client.on('action', (playerId, action) => {
+        console.log(`playerId: ${playerId} action: ${action}`);
+
+        if (!players.has(playerId)) {
+            console.warn(`Requested to control player ${playerId}, which doesn't exist!`);
+            return;
+        }
+    
+        const player = players.get(playerId);
+    
+        switch (action) {
+            case 'up':
+                player.moveUp();
+                break;
+            case 'down':
+                player.moveDown();
+                break;
+            case 'left':
+                player.moveLeft();
+                break;
+            case 'right':
+                player.moveRight();
+                break;
+            case 'gobble':
+                player.gobble();
+                return;
+            default:
+                console.warn(`Unknown action ${action} for player ${playerId}`)
+                return;
+        }
+    
+        redrawPlayingField();
+        client.emit('refresh', canvas.toDataURL());
     });
 });
-
-io.listen(SOCKET_IO_LISTEN_PORT);
