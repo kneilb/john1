@@ -1,4 +1,53 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
+import openSocket from 'socket.io-client';
+
+const socket = openSocket('http://localhost:1338');
+
+function subscribeToTimer(cb) {
+    socket.on('timer', timestamp => cb(null, timestamp));
+    socket.emit('subscribeToTimer', 1000);
+}
+
+async function getGameCanvas() {
+    try {
+        const response = await fetch('/api/game');
+
+        return await response.text();
+    }
+    catch (error) {
+        console.error(`ERROR!!!1 ${error}`);
+    }
+}
+
+async function sendCommand(playerId, command) {
+    try {
+        const response = await fetch(`/api/game/${playerId}/${command}`, {
+            method: 'put'
+        });
+
+        if (response.status !== 200) {
+            return;
+        }
+
+        return await response.text();
+    }
+    catch (error) {
+        console.error(`ERROR!!!1 ${error}`);
+    }
+}
+
+async function deletePlayer(playerId) {
+    try {
+        const response = await fetch(`/api/game/${playerId}`, {
+            method: 'delete'
+        });
+
+        return response.status;
+    }
+    catch (error) {
+        console.error(`ERROR!!!1 ${error}`);
+    }
+}
 
 function Action(props) {
     return (
@@ -25,60 +74,45 @@ export default function Game(props) {
     }, [setCanvasSource]);
 
     useEffect(() => {
-        const addKeyHandler = () => {
-            window.addEventListener('keyup', handleKey);
-        }
-        addKeyHandler();
-    }, []);
-
-    // TODO: factor out
-    async function getGameCanvas() {
-        try {
-            const response = await fetch('/api/game');
-
-            return await response.text();
-        }
-        catch (error) {
-            console.error(`Error: ${error}`);
-        }
-    }
-
-    // TODO: factor out
-    async function sendCommand(command) {
-        try {
-            const response = await fetch(`/api/game/${props.playerId}/${command}`, {
-                method: 'put'
-            });
-
-            if (response.status !== 200) {
-                return;
+        async function handleKey(event) {
+            let command = null;
+    
+            console.log(event.key);
+            switch (event.key) {
+                case 'w':
+                case 'ArrowUp':
+                    command = 'up';
+                    break;
+                case 's':
+                case 'ArrowDown':
+                    command = 'down';
+                    break;
+                case 'a':
+                case 'ArrowLeft':
+                    command = 'left';
+                    break;
+                case 'd':
+                case 'ArrowRight':
+                    command = 'right';
+                    break;
+                default:
+                    break;
             }
+    
+            if (command !== null) {
+                const newCanvasSource = await sendCommand(props.playerId, command);
+                setCanvasSource(newCanvasSource);
+            }
+        }
 
-            const newSource = await response.text();
-            setCanvasSource(newSource);
-        }
-        catch (error) {
-            console.error(`Error: ${error}`);
-        }
-    }
-
-    async function deletePlayer(playerId) {
-        try {
-            const response = await fetch(`/api/game/${playerId}`, {
-                method: 'delete'
-            });
-
-            return response.status;
-        }
-        catch (error) {
-            console.error(`Error: ${error}`);
-        }
-    }
+        document.addEventListener('keyup', handleKey);
+    }, [props.playerId]);
 
     async function handleClick(id) {
         console.log(`click? ${id}`);
 
-        await sendCommand(id);
+        const newCanvasSource = await sendCommand(props.playerId, id);
+        setCanvasSource(newCanvasSource);
     }
 
     async function handleExit(id) {
@@ -91,32 +125,6 @@ export default function Game(props) {
         }
 
         props.onExit();
-    }
-
-    async function handleKey(event) {
-        event.preventDefault();
-
-        console.log(event.key);
-        switch (event.key) {
-            case 'w':
-            case 'ArrowUp':
-                await sendCommand('up');
-                break;
-            case 's':
-            case 'ArrowDown':
-                await sendCommand('down');
-                break;
-            case 'a':
-            case 'ArrowLeft':
-                await sendCommand('left');
-                break;
-            case 'd':
-            case 'ArrowRight':
-                await sendCommand('right');
-                break;
-            default:
-                break;
-        }
     }
 
     return (

@@ -1,10 +1,10 @@
-// TODO: import!?
 const { createCanvas } = require('canvas');
 const rough = require('roughjs');
-
 const express = require('express');
+const socketIo = require('socket.io');
 
-const LISTEN_PORT = 1337;
+const HTTP_LISTEN_PORT = 1337;
+const SOCKET_IO_LISTEN_PORT = 1338;
 
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
@@ -46,6 +46,7 @@ class Player {
 }
 
 const app = express();
+const io = socketIo();
 
 const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
@@ -144,6 +145,17 @@ app.put('/api/game/:playerId/:control', (request, response) => {
     response.type('image/png').send(canvas.toDataURL());
 });
 
-app.listen(LISTEN_PORT, () => {
-    console.log(`Server running at http://localhost:${LISTEN_PORT}/`);
+app.listen(HTTP_LISTEN_PORT, () => {
+    console.log(`Server running at http://localhost:${HTTP_LISTEN_PORT}/`);
 });
+
+io.on('connection', (client) => {
+    client.on('subscribeToTimer', (interval) => {
+        console.log('client is subscribing to timer with interval ', interval);
+        setInterval(() => {
+            client.emit('timer', new Date());
+        }, interval);
+    });
+});
+
+io.listen(SOCKET_IO_LISTEN_PORT);

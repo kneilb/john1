@@ -46,6 +46,7 @@ export default function Welcome(props) {
             <Chooser id="green" name="Green" onClick={handleClick} />
             <Chooser id="yellow" name="Yellow" onClick={handleClick} />
             <Chooser id="blue" name="Blue" onClick={handleClick} />
+            <Chooser id="orange" name="Fishface" onClick={handleClick} />
         </div>
     );
 };
