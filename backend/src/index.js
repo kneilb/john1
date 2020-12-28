@@ -288,12 +288,7 @@ class Player {
     }
 }
 
-const io = require('socket.io')(HTTP_LISTEN_PORT, {
-    cors: {
-        origin: `http://localhost:${CLIENT_PORT}`,
-        methods: ['GET', 'POST']
-    }
-});
+const io = require('socket.io')(HTTP_LISTEN_PORT);
 
 const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
@@ -319,7 +314,6 @@ let spawnCoordinates = [];
 for (l of land) {
     spawnCoordinates.push(...l.getSpawnCoordinates());
 }
-console.log(spawnCoordinates);
 
 keys = [];
 for (i = 0; i < 3; ++i) {
