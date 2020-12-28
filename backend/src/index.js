@@ -1,5 +1,4 @@
 const HTTP_LISTEN_PORT = 1337;
-const CLIENT_PORT = 3000;
 
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
@@ -158,6 +157,7 @@ class Gate {
     constructor(x, y) {
         this.x = x;
         this.y = y;
+        this.drawable = null;
     }
 
     on(x, y) {
@@ -169,12 +169,16 @@ class Gate {
     }
 
     draw(roughCanvas) {
-        roughCanvas.ellipse(
-            (this.x * GRID_SIZE) + (GRID_SIZE / 2), (this.y * GRID_SIZE) + (GRID_SIZE / 2),
-            GRID_SIZE, GRID_SIZE, {
-            fill: 'brown',
-            fillStyle: 'dots'
-        });
+        if (this.drawable === null) {
+            this.drawable = roughCanvas.ellipse(
+                (this.x * GRID_SIZE) + (GRID_SIZE / 2), (this.y * GRID_SIZE) + (GRID_SIZE / 2),
+                GRID_SIZE, GRID_SIZE, {
+                fill: 'brown',
+                fillStyle: 'dots'
+            });
+        }
+
+        roughCanvas.draw(this.drawable);
     }
 }
 
@@ -218,12 +222,6 @@ class Player {
     }
 
     draw(roughCanvas) {
-        roughCanvas.rectangle(
-            (this.x * GRID_SIZE), (this.y * GRID_SIZE),
-            GRID_SIZE, GRID_SIZE,
-            { roughness: 2.8, fill: this.colour }
-        );
-
         roughCanvas.rectangle(
             (this.x * GRID_SIZE), (this.y * GRID_SIZE),
             GRID_SIZE, GRID_SIZE,
@@ -306,7 +304,6 @@ let land = [
     new Platform(12, 10, 1, 2),
     new Island(8, 12, 8, 7, false)
 ];
-let keys = [];
 let gate = new Gate(12, 11);
 let ruby = new Ruby(12, 15);
 
@@ -315,7 +312,7 @@ for (l of land) {
     spawnCoordinates.push(...l.getSpawnCoordinates());
 }
 
-keys = [];
+let keys = [];
 for (i = 0; i < 3; ++i) {
     const spawnCoordinates = chooseSpawnCoordinates();
     keys.push(new Key(spawnCoordinates.x, spawnCoordinates.y));
@@ -389,12 +386,12 @@ io.on('connection', (client) => {
         redrawPlayingField();
     });
 
-    client.on('refresh', () => {
+    client.on('refresh', (callback) => {
         console.log('client requested refresh');
-        client.emit('refresh', canvas.toDataURL());
+        callback(canvas.toDataURL());
     });
 
-    client.on('action', (playerId, action) => {
+    client.on('action', (playerId, action, callback) => {
         console.log(`playerId: ${playerId} action: ${action}`);
 
         if (!players.has(playerId)) {
@@ -426,6 +423,6 @@ io.on('connection', (client) => {
         }
 
         redrawPlayingField();
-        client.emit('refresh', canvas.toDataURL());
+        callback(canvas.toDataURL());
     });
 });

@@ -18,13 +18,11 @@ function leave(playerId) {
 }
 
 function refresh(callback) {
-    socket.on('refresh', data => callback(data));
-    socket.emit('refresh');
+    socket.emit('refresh', response => callback(response));
 }
 
 function action(playerId, command, callback) {
-    socket.on('refresh', data => callback(data));
-    socket.emit('action', playerId, command);
+    socket.emit('action', playerId, command, response => callback(response));
 }
 
 //export { join, leave, refresh, action };

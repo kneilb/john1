@@ -17,6 +17,7 @@ export default function Game(props) {
     const [canvasSource, setCanvasSource] = useState();
 
     useEffect(() => {
+        console.log('refresh');
         api.refresh(setCanvasSource);
     }, []);
 
