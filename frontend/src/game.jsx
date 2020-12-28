@@ -27,18 +27,22 @@ export default function Game(props) {
             console.log(event.key);
             switch (event.key) {
                 case 'w':
+                case 'W':
                 case 'ArrowUp':
                     command = 'up';
                     break;
                 case 's':
+                case 'S':
                 case 'ArrowDown':
                     command = 'down';
                     break;
                 case 'a':
+                case 'A':
                 case 'ArrowLeft':
                     command = 'left';
                     break;
                 case 'd':
+                case 'D':
                 case 'ArrowRight':
                     command = 'right';
                     break;
