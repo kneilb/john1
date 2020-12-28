@@ -31,24 +31,27 @@ class Island extends Land {
     // belongs to a player
     // has their machine
     // a key spawns here
-    constructor(x, y, width, height) {
+    constructor(x, y, width, height, canSpawn) {
         super();
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.canSpawn = canSpawn;
     }
 
-    getStartCoordinates()
+    getSpawnCoordinates()
     {
         let coords = [];
 
-        for (let y = this.y; y < this.y + this.height; ++y) {
-            for (let x = this.x; x < this.x + this.width; ++x) {
-                coords.push(new Coords(x, y));
+        if (this.canSpawn) {
+            for (let y = this.y; y < this.y + this.height; ++y) {
+                for (let x = this.x; x < this.x + this.width; ++x) {
+                    coords.push(new Coords(x, y));
+                }
             }
         }
-        
+
         return coords;
     }
 
@@ -72,7 +75,7 @@ class Platform extends Land {
         this.height = height;
     }
 
-    getStartCoordinates()
+    getSpawnCoordinates()
     {
         return [];
     }
@@ -94,10 +97,9 @@ class Key {
     // Dropped on death of player
     // 1 spawns on each player's island
     // Must be taken to the gate to unlock it
-    constructor(id) {
-        this.id = id;
-        this.x = id;
-        this.y = id;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
         this.player = null;
     }
 
@@ -169,10 +171,9 @@ class Gate {
 class Ruby {
     // Dropped on death of player
     // Must be taken back to the player's machine in order to win
-
-    constructor() {
-        this.x = 4;
-        this.y = 4;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
         this.player = null;
     }
 
@@ -289,30 +290,36 @@ const canvasContext = canvas.getContext('2d');
 const roughCanvas = require('roughjs').canvas(canvas);
 
 let land = [
-    new Island(9, 0, 6, 5),
-    new Island(0, 7, 6, 5),
+    new Island(9, 0, 6, 5, true),
+    new Island(0, 7, 6, 5, true),
     new Platform(6, 9, 12, 1),
-    new Island(18, 7, 6, 5),
+    new Island(18, 7, 6, 5, true),
     new Platform(12, 10, 1, 2),
-    new Island(8, 12, 8, 7)
+    new Island(8, 12, 8, 7, false)
 ];
-let keys = [new Key(1), new Key(2), new Key(3)];
+let keys = [];
 let gate = new Gate(12, 11);
-let ruby = new Ruby();
+let ruby = new Ruby(12, 15);
 
-let startCoordinates = [];
-for (let l of land) {
-    startCoordinates.push(...l.getStartCoordinates());
+let spawnCoordinates = [];
+for (l of land) {
+    spawnCoordinates.push(...l.getSpawnCoordinates());
 }
-console.log(startCoordinates);
+console.log(spawnCoordinates);
 
-function chooseStartCoordinates()
-{
-    return startCoordinates[Math.floor(Math.random() * startCoordinates.length)];
+keys = [];
+for (i = 0; i < 3; ++i) {
+    const spawnCoordinates = chooseSpawnCoordinates();
+    keys.push(new Key(spawnCoordinates.x, spawnCoordinates.y));
 }
 
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
+
+function chooseSpawnCoordinates()
+{
+    return spawnCoordinates[Math.floor(Math.random() * spawnCoordinates.length)];
+}
 
 function redrawPlayingField() {
     canvasContext.clearRect(0, 0, canvas.width, canvas.height);
@@ -354,9 +361,9 @@ io.on('connection', (client) => {
 
         console.log(`Creating new player: ${playerId}!!`);
 
-        startCoords = chooseStartCoordinates();
+        const spawnCoordinates = chooseSpawnCoordinates();
 
-        const player = new Player(playerId, startCoords.x, startCoords.y);
+        const player = new Player(playerId, spawnCoordinates.x, spawnCoordinates.y);
         players.set(playerId, player);
         redrawPlayingField();
         callback({ okay: true, text: 'okay'});
