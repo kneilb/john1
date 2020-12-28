@@ -17,6 +17,26 @@ class Island {
     // belongs to a player
     // has their machine
     // a key spawns here
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    onIsland(x, y) {
+        return (x >= this.x && x < (this.x + this.width) &&
+                y >= this.y && y < (this.y + this.height));
+    }
+
+    draw(roughCanvas) {
+        roughCanvas.rectangle(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            this.width * GRID_SIZE, this.height * GRID_SIZE, {
+            fill: 'green',
+            fillStyle: 'dots'
+        });
+    }
 }
 
 class Platform {
@@ -173,12 +193,17 @@ class Player {
         if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
             return;
         }
-    
+
         if (gate.checkLocation(x, y) && !gate.canPass(this)) {
             console.log(`${this.colour}: NONE SHALL PASS!!!1`);
             return;
         }
-    
+
+        if (!islands.some((island) => island.onIsland(x, y))) {
+            console.log(`${this.colour}: TRIED TO FALL OFF THE WORLD!`);
+            return;
+        }
+
         this.x = x;
         this.y = y;
 
@@ -219,6 +244,12 @@ const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
 const roughCanvas = require('roughjs').canvas(canvas);
 
+let islands = [
+    new Island(0, 0, 6, 5),
+    new Island(7, 6, 6, 5),
+    new Island(0, 6, 6, 5),
+    new Island(7, 0, 6, 5)
+]
 let keys = [new Key(1), new Key(2), new Key(3)];
 let gate = new Gate();
 let ruby = new Ruby();
@@ -228,6 +259,10 @@ let players = new Map();
 
 function redrawPlayingField() {
     canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let island of islands) {
+        island.draw(roughCanvas);
+    }
 
     for (let [_, player] of players) {
         player.draw(roughCanvas);
@@ -241,21 +276,31 @@ function redrawPlayingField() {
         key.draw(roughCanvas);
     }
 }
- 
+
 io.on('connection', (client) => {
-    client.on('join', (playerId) => {
+    // TODO: use disconnect to remove players!
+    console.log('A user connected!!');
+
+    client.on('disconnect', () => {
+        console.log('A user disconnected!!');
+    });
+
+    client.on('join', (playerId, callback) => {
         console.log(`join: ${playerId}`);
 
         if (players.has(playerId)) {
-            console.log(`Requested player ${playerId}, which is already in use!`);
+            const text = `Requested player ${playerId}, which is already in use!`
+            console.log(text);
+            callback({ okay: false, text: text});
             return;
         }
-    
+
         console.log(`Creating new player: ${playerId}!!`);
-    
+
         const player = new Player(playerId);
         players.set(playerId, player);
         redrawPlayingField();
+        callback({ okay: true, text: 'okay'});
     });
 
     client.on('leave', (playerId) => {
@@ -265,7 +310,7 @@ io.on('connection', (client) => {
             console.log(`Requested to delete player ${playerId}, which does not exist!`);
             return;
         }
-    
+
         players.delete(playerId);
         redrawPlayingField();
     });
@@ -282,9 +327,9 @@ io.on('connection', (client) => {
             console.warn(`Requested to control player ${playerId}, which doesn't exist!`);
             return;
         }
-    
+
         const player = players.get(playerId);
-    
+
         switch (action) {
             case 'up':
                 player.moveUp();
@@ -305,7 +350,7 @@ io.on('connection', (client) => {
                 console.warn(`Unknown action ${action} for player ${playerId}`)
                 return;
         }
-    
+
         redrawPlayingField();
         client.emit('refresh', canvas.toDataURL());
     });

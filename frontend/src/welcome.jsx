@@ -14,29 +14,23 @@ function Chooser(props) {
 
 export default function Welcome(props) {
 
-    async function handleClick(id) {
+    function handleClick(id) {
         console.log(`I want to play as ${id}`);
 
-        // TODO: can ignore 409 conflict & just carry on, taking control of the existing player!!
+        // TODO: can ignore rejection & just carry on, taking control of the existing player!!
         // TODO: The "feature" outlined above is kinda handy for testing - hence the commented out code.
-        // TODO: add auth via a randomly generated cookie...!?
-        try {
-            api.join(id);
-
-            // if (response.status !== 200) {
-            //     console.error(`Error: ${response.statusText}`);
-            //     props.onError(id);
-            //     return;
-            // }
-
-            //const text = await response.text();
-            //console.log(text);
+        // TODO: add auth via a randomly generated cookie, or just use the socket.io connection?
+        function onAccept(text) {
             props.onSelect(id);
         }
-        catch (error) {
-            console.error(`Error: ${error}`);
-            props.onError(id);
+
+        function onReject(text) {
+            console.error(`Error: ${text}`);
+            //props.onError(id);
+            props.onSelect(id);
         }
+
+        api.join(id, onAccept, onReject);
     }
 
     return (
@@ -45,7 +39,7 @@ export default function Welcome(props) {
             <Chooser id="green" name="Green" onClick={handleClick} />
             <Chooser id="yellow" name="Yellow" onClick={handleClick} />
             <Chooser id="blue" name="Blue" onClick={handleClick} />
-            <Chooser id="orange" name="Fishface" onClick={handleClick} />
+            <Chooser id="orange" name="Orange" onClick={handleClick} />
         </div>
     );
 };
