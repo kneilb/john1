@@ -12,8 +12,8 @@ RUN apt-get update && \
 
 # Install app
 WORKDIR /app
-COPY --chown=daemon:daemon ./ .
-RUN npm install .
+COPY --chown=daemon:daemon . /app
+RUN npm install
 
 ENTRYPOINT ["node"]
 CMD ["/app/src/index.js"]
