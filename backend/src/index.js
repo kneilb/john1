@@ -24,7 +24,7 @@ class Island {
         this.height = height;
     }
 
-    onIsland(x, y) {
+    on(x, y) {
         return (x >= this.x && x < (this.x + this.width) &&
                 y >= this.y && y < (this.y + this.height));
     }
@@ -41,6 +41,26 @@ class Island {
 
 class Platform {
     // connects islands
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    on(x, y) {
+        return (x >= this.x && x < (this.x + this.width) &&
+                y >= this.y && y < (this.y + this.height));
+    }
+
+    draw(roughCanvas) {
+        roughCanvas.rectangle(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            this.width * GRID_SIZE, this.height * GRID_SIZE, {
+            fill: 'grey',
+            fillStyle: 'dots'
+        });
+    }
 }
 
 class Machine {
@@ -199,7 +219,7 @@ class Player {
             return;
         }
 
-        if (!islands.some((island) => island.onIsland(x, y))) {
+        if (!land.some((l) => l.on(x, y))) {
             console.log(`${this.colour}: TRIED TO FALL OFF THE WORLD!`);
             return;
         }
@@ -244,12 +264,13 @@ const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
 const roughCanvas = require('roughjs').canvas(canvas);
 
-let islands = [
-    new Island(0, 0, 6, 5),
-    new Island(7, 6, 6, 5),
-    new Island(0, 6, 6, 5),
-    new Island(7, 0, 6, 5)
-]
+let land = [
+    new Island(9, 0, 6, 5),
+    new Island(0, 7, 6, 5),
+    new Platform(6, 9, 12, 1),
+    new Island(18, 7, 6, 5),
+    new Island(8, 12, 8, 7)
+];
 let keys = [new Key(1), new Key(2), new Key(3)];
 let gate = new Gate();
 let ruby = new Ruby();
@@ -260,8 +281,8 @@ let players = new Map();
 function redrawPlayingField() {
     canvasContext.clearRect(0, 0, canvas.width, canvas.height);
 
-    for (let island of islands) {
-        island.draw(roughCanvas);
+    for (let l of land) {
+        l.draw(roughCanvas);
     }
 
     for (let [_, player] of players) {
