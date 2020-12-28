@@ -1,6 +1,6 @@
 import openSocket from 'socket.io-client';
 
-const socket = openSocket('http://localhost:1337');
+const socket = openSocket();
 
 function join(playerId, onAccept, onReject) {
     socket.emit('join', playerId, (response) => {
