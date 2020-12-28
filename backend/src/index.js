@@ -38,6 +38,7 @@ class Island extends Land {
         this.width = width;
         this.height = height;
         this.canSpawn = canSpawn;
+        this.drawable = null;
     }
 
     getSpawnCoordinates()
@@ -56,12 +57,16 @@ class Island extends Land {
     }
 
     draw(roughCanvas) {
-        roughCanvas.rectangle(
-            this.x * GRID_SIZE, this.y * GRID_SIZE,
-            this.width * GRID_SIZE, this.height * GRID_SIZE, {
-            fill: 'green',
-            fillStyle: 'dots'
-        });
+        if (this.drawable === null) {
+            this.drawable = roughCanvas.rectangle(
+                this.x * GRID_SIZE, this.y * GRID_SIZE,
+                this.width * GRID_SIZE, this.height * GRID_SIZE, {
+                fill: 'green',
+                fillStyle: 'dots'
+            });
+        }
+
+        roughCanvas.draw(this.drawable);
     }
 }
 
@@ -73,6 +78,7 @@ class Platform extends Land {
         this.y = y;
         this.width = width;
         this.height = height;
+        this.drawable = null;
     }
 
     getSpawnCoordinates()
@@ -81,12 +87,16 @@ class Platform extends Land {
     }
 
     draw(roughCanvas) {
-        roughCanvas.rectangle(
-            this.x * GRID_SIZE, this.y * GRID_SIZE,
-            this.width * GRID_SIZE, this.height * GRID_SIZE, {
-            fill: 'grey',
-            fillStyle: 'dots'
-        });
+        if (this.drawable === null) {
+            this.drawable = roughCanvas.rectangle(
+                this.x * GRID_SIZE, this.y * GRID_SIZE,
+                this.width * GRID_SIZE, this.height * GRID_SIZE, {
+                fill: 'grey',
+                fillStyle: 'dots'
+            });
+        }
+
+        roughCanvas.draw(this.drawable);
     }
 }
 
