@@ -13,20 +13,43 @@ const GRID_SIZE = 40;
 const RUBY_DIAMETER = (GRID_SIZE / 2);
 const KEY_CIRCLE_DIAMETER = (GRID_SIZE / 4);
 
-class Island {
+class Coords {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+class Land {
+    on(x, y) {
+        return (x >= this.x && x < (this.x + this.width) &&
+                y >= this.y && y < (this.y + this.height));
+    }
+};
+
+class Island extends Land {
     // belongs to a player
     // has their machine
     // a key spawns here
     constructor(x, y, width, height) {
+        super();
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
     }
 
-    on(x, y) {
-        return (x >= this.x && x < (this.x + this.width) &&
-                y >= this.y && y < (this.y + this.height));
+    getStartCoordinates()
+    {
+        let coords = [];
+
+        for (let y = this.y; y < this.y + this.height; ++y) {
+            for (let x = this.x; x < this.x + this.width; ++x) {
+                coords.push(new Coords(x, y));
+            }
+        }
+        
+        return coords;
     }
 
     draw(roughCanvas) {
@@ -39,18 +62,19 @@ class Island {
     }
 }
 
-class Platform {
+class Platform extends Land {
     // connects islands
     constructor(x, y, width, height) {
+        super();
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
     }
 
-    on(x, y) {
-        return (x >= this.x && x < (this.x + this.width) &&
-                y >= this.y && y < (this.y + this.height));
+    getStartCoordinates()
+    {
+        return [];
     }
 
     draw(roughCanvas) {
@@ -119,12 +143,12 @@ class Key {
 class Gate {
     // Needs 3 keys to open
     // Leads to the island with the ruby
-    constructor() {
-        this.x = 10;
-        this.y = 15;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
     }
 
-    checkLocation(x, y) {
+    on(x, y) {
         return x === this.x && y === this.y;
     }
 
@@ -176,9 +200,9 @@ class Ruby {
 }
 
 class Player {
-    constructor(colour) {
-        this.x = 0;
-        this.y = 0;
+    constructor(colour, x, y) {
+        this.x = x;
+        this.y = y;
         this.colour = colour;
     }
 
@@ -214,7 +238,7 @@ class Player {
             return;
         }
 
-        if (gate.checkLocation(x, y) && !gate.canPass(this)) {
+        if (gate.on(x, y) && !gate.canPass(this)) {
             console.log(`${this.colour}: NONE SHALL PASS!!!1`);
             return;
         }
@@ -269,11 +293,23 @@ let land = [
     new Island(0, 7, 6, 5),
     new Platform(6, 9, 12, 1),
     new Island(18, 7, 6, 5),
+    new Platform(12, 10, 1, 2),
     new Island(8, 12, 8, 7)
 ];
 let keys = [new Key(1), new Key(2), new Key(3)];
-let gate = new Gate();
+let gate = new Gate(12, 11);
 let ruby = new Ruby();
+
+let startCoordinates = [];
+for (let l of land) {
+    startCoordinates.push(...l.getStartCoordinates());
+}
+console.log(startCoordinates);
+
+function chooseStartCoordinates()
+{
+    return startCoordinates[Math.floor(Math.random() * startCoordinates.length)];
+}
 
 // TODO: tidy up players that have disconnected...!
 let players = new Map();
@@ -318,7 +354,9 @@ io.on('connection', (client) => {
 
         console.log(`Creating new player: ${playerId}!!`);
 
-        const player = new Player(playerId);
+        startCoords = chooseStartCoordinates();
+
+        const player = new Player(playerId, startCoords.x, startCoords.y);
         players.set(playerId, player);
         redrawPlayingField();
         callback({ okay: true, text: 'okay'});
