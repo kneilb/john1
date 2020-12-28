@@ -7,7 +7,7 @@ const CANVAS_HEIGHT = 768;
 const X_MIN = 0;
 const X_MAX = 24;
 const Y_MIN = 0;
-const Y_MAX = 17;
+const Y_MAX = 18;
 const GRID_SIZE = 40;
 
 const RUBY_DIAMETER = (GRID_SIZE / 2);
@@ -291,6 +291,10 @@ const roughCanvas = require('roughjs').canvas(canvas);
 
 let land = [
     new Island(9, 0, 6, 5, true),
+    new Platform(3, 3, 6, 1),
+    new Platform(3, 4, 1, 3),
+    new Platform(15, 3, 6, 1),
+    new Platform(20, 4, 1, 3),
     new Island(0, 7, 6, 5, true),
     new Platform(6, 9, 12, 1),
     new Island(18, 7, 6, 5, true),
