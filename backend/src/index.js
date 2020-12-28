@@ -3,14 +3,17 @@ const HTTP_LISTEN_PORT = 1337;
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
 
-const X_MIN = 0;
-const X_MAX = 24;
-const Y_MIN = 0;
-const Y_MAX = 18;
 const GRID_SIZE = 40;
 
-const RUBY_DIAMETER = (GRID_SIZE / 2);
-const KEY_CIRCLE_DIAMETER = (GRID_SIZE / 4);
+// Minus 1 because when in cell (0, 0), extents are (GRID_SIZE, GRID_SIZE).
+const X_MIN = 0;
+const X_MAX = Math.floor(CANVAS_WIDTH / GRID_SIZE) - 1;
+const Y_MIN = 0;
+const Y_MAX = Math.floor(CANVAS_HEIGHT / GRID_SIZE) - 1;
+
+const RUBY_RADIUS = GRID_SIZE / 4;
+const KEY_CIRCLE_RADIUS = GRID_SIZE / 8;
+const GATE_RADIUS = GRID_SIZE / 2;
 
 class Coords {
     constructor(x, y) {
@@ -37,7 +40,6 @@ class Island extends Land {
         this.width = width;
         this.height = height;
         this.canSpawn = canSpawn;
-        this.drawable = null;
     }
 
     getSpawnCoordinates()
@@ -55,17 +57,13 @@ class Island extends Land {
         return coords;
     }
 
-    draw(roughCanvas) {
-        if (this.drawable === null) {
-            this.drawable = roughCanvas.rectangle(
-                this.x * GRID_SIZE, this.y * GRID_SIZE,
-                this.width * GRID_SIZE, this.height * GRID_SIZE, {
-                fill: 'green',
-                fillStyle: 'dots'
-            });
-        }
-
-        roughCanvas.draw(this.drawable);
+    draw(canvasContext) {
+        canvasContext.fillStyle = 'green';
+        
+        canvasContext.fillRect(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            this.width * GRID_SIZE, this.height * GRID_SIZE
+        );
     }
 }
 
@@ -77,7 +75,6 @@ class Platform extends Land {
         this.y = y;
         this.width = width;
         this.height = height;
-        this.drawable = null;
     }
 
     getSpawnCoordinates()
@@ -85,17 +82,13 @@ class Platform extends Land {
         return [];
     }
 
-    draw(roughCanvas) {
-        if (this.drawable === null) {
-            this.drawable = roughCanvas.rectangle(
-                this.x * GRID_SIZE, this.y * GRID_SIZE,
-                this.width * GRID_SIZE, this.height * GRID_SIZE, {
-                fill: 'grey',
-                fillStyle: 'dots'
-            });
-        }
+    draw(canvasContext) {
+        canvasContext.fillStyle = 'grey';
 
-        roughCanvas.draw(this.drawable);
+        canvasContext.fillRect(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            this.width * GRID_SIZE, this.height * GRID_SIZE
+        );
     }
 }
 
@@ -112,29 +105,30 @@ class Key {
         this.player = null;
     }
 
-    draw(roughCanvas) {
-        roughCanvas.circle(
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
-            KEY_CIRCLE_DIAMETER, {
-            fill: 'yellow',
-            fillStyle: 'cross-hatch'
-        });
-        roughCanvas.line(
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2)
+    draw(canvasContext) {
+        canvasContext.beginPath();
+
+        canvasContext.arc(
+            (this.x * GRID_SIZE) + KEY_CIRCLE_RADIUS,
+            (this.y * GRID_SIZE) + KEY_CIRCLE_RADIUS,
+            KEY_CIRCLE_RADIUS, 0, Math.PI * 2, false
         );
-        roughCanvas.line(
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 1)
-        );
-        roughCanvas.line(
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 7/4), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 7/4), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/4)
-        );
-        roughCanvas.line(
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER / 2),
-            this.x * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 3/2), this.y * GRID_SIZE + (KEY_CIRCLE_DIAMETER * 1)
-        );
+
+        canvasContext.fillStyle = 'yellow';
+        canvasContext.fill();
+
+        canvasContext.beginPath();
+
+        canvasContext.moveTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 4, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 4, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS * 2);
+        canvasContext.moveTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 3, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 3, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS * 2);
+        canvasContext.moveTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 7/2, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 7/2, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS * 3/2);
+
+        canvasContext.strokeStyle = 'yellow';
+        canvasContext.stroke();
     }
 
     tryPickup(player) {
@@ -157,7 +151,6 @@ class Gate {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.drawable = null;
     }
 
     on(x, y) {
@@ -168,19 +161,30 @@ class Gate {
         return keys.every((key) => key.player == player);
     }
 
-    draw(roughCanvas) {
-        if (this.drawable === null) {
-            this.drawable = roughCanvas.ellipse(
-                (this.x * GRID_SIZE) + (GRID_SIZE / 2), (this.y * GRID_SIZE) + (GRID_SIZE / 2),
-                GRID_SIZE, GRID_SIZE, {
-                fill: 'brown',
-                fillStyle: 'dots'
-            });
-        }
+    draw(canvasContext) {
+        canvasContext.beginPath();
 
-        roughCanvas.draw(this.drawable);
+        canvasContext.arc(
+            (this.x * GRID_SIZE) + (GRID_SIZE / 2),
+            (this.y * GRID_SIZE) + (GRID_SIZE / 2),
+            GATE_RADIUS, 0, Math.PI * 2, false
+        );
+
+        canvasContext.fillStyle = 'brown';
+        canvasContext.fill();
     }
 }
+
+// draw a heart! <3
+// ctx.beginPath();
+// ctx.moveTo(75, 40);
+// ctx.bezierCurveTo(75, 37, 70, 25, 50, 25);
+// ctx.bezierCurveTo(20, 25, 20, 62.5, 20, 62.5);
+// ctx.bezierCurveTo(20, 80, 40, 102, 75, 120);
+// ctx.bezierCurveTo(110, 102, 130, 80, 130, 62.5);
+// ctx.bezierCurveTo(130, 62.5, 130, 25, 100, 25);
+// ctx.bezierCurveTo(85, 25, 75, 37, 75, 40);
+// ctx.fill();
 
 class Ruby {
     // Dropped on death of player
@@ -204,13 +208,19 @@ class Ruby {
         }
     }
 
-    draw(roughCanvas) {
-        roughCanvas.circle(
-            (this.x * GRID_SIZE) + (GRID_SIZE / 2), (this.y * GRID_SIZE) + (GRID_SIZE / 2),
-            RUBY_DIAMETER, {
-            fill: 'red',
-            fillStyle: 'cross-hatch'
-        });
+    draw(canvasContext) {
+        canvasContext.beginPath();
+
+        canvasContext.arc(
+            (this.x * GRID_SIZE) + (GRID_SIZE / 2),
+            (this.y * GRID_SIZE) + (GRID_SIZE / 2),
+            RUBY_RADIUS, 0, Math.PI * 2, false
+        );
+
+        canvasContext.fillStyle = 'red';
+        canvasContext.fill();
+        canvasContext.strokeStyle = 'black';
+        canvasContext.stroke();
     }
 }
 
@@ -221,25 +231,13 @@ class Player {
         this.colour = colour;
     }
 
-    draw(roughCanvas) {
-        roughCanvas.rectangle(
-            (this.x * GRID_SIZE), (this.y * GRID_SIZE),
-            GRID_SIZE, GRID_SIZE,
-            { roughness: 2.8, fill: this.colour }
+    draw(canvasContext) {
+        canvasContext.fillStyle = this.colour;
+        
+        canvasContext.fillRect(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            GRID_SIZE, GRID_SIZE
         );
-    }
-
-    moveRubyIfPresent() {
-        if (ruby.player === this) {
-            ruby.x = this.x + 20;
-            ruby.y = this.y + 20;
-        }
-    }
-
-    pickUpRubyIfPresent() {
-        if (ruby && (ruby.x == this.x + 20) && (ruby.y == this.y + 20)) {
-            ruby.player = this;
-        }
     }
 
     tryMove(x, y) {
@@ -290,7 +288,6 @@ const io = require('socket.io')(HTTP_LISTEN_PORT);
 
 const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 const canvasContext = canvas.getContext('2d');
-const roughCanvas = require('roughjs').canvas(canvas);
 
 let land = [
     new Island(9, 0, 6, 5, true),
@@ -330,19 +327,19 @@ function redrawPlayingField() {
     canvasContext.clearRect(0, 0, canvas.width, canvas.height);
 
     for (let l of land) {
-        l.draw(roughCanvas);
+        l.draw(canvasContext);
     }
+
+    gate.draw(canvasContext);
 
     for (let [_, player] of players) {
-        player.draw(roughCanvas);
+        player.draw(canvasContext);
     }
 
-    ruby.draw(roughCanvas);
-
-    gate.draw(roughCanvas);
+    ruby.draw(canvasContext);
 
     for (let key of keys) {
-        key.draw(roughCanvas);
+        key.draw(canvasContext);
     }
 }
 
