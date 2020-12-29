@@ -23,18 +23,7 @@ class Coords {
 }
 
 class Land {
-    on(x, y) {
-        return (x >= this.x && x < (this.x + this.width) &&
-                y >= this.y && y < (this.y + this.height));
-    }
-};
-
-class Island extends Land {
-    // belongs to a player
-    // has their machine
-    // a key spawns here
     constructor(x, y, width, height, canSpawn) {
-        super();
         this.x = x;
         this.y = y;
         this.width = width;
@@ -57,6 +46,16 @@ class Island extends Land {
         return coords;
     }
 
+    on(x, y) {
+        return (x >= this.x && x < (this.x + this.width) &&
+                y >= this.y && y < (this.y + this.height));
+    }
+};
+
+class Island extends Land {
+    // belongs to a player
+    // has their machine
+    // a key spawns here
     draw(canvasContext) {
         canvasContext.fillStyle = 'green';
         
@@ -70,16 +69,7 @@ class Island extends Land {
 class Platform extends Land {
     // connects islands
     constructor(x, y, width, height) {
-        super();
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-
-    getSpawnCoordinates()
-    {
-        return [];
+        super(x, y, width, height, false);
     }
 
     draw(canvasContext) {
@@ -158,7 +148,7 @@ class Gate {
     }
 
     canPass(player) {
-        return keys.every((key) => key.player == player);
+        return keys.every(key => key.player == player);
     }
 
     draw(canvasContext) {
