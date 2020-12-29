@@ -83,16 +83,71 @@ class Platform extends Land {
 }
 
 class Machine {
+    // take the ruby to your machine to win!
+    constructor(colour, x, y) {
+        this.colour = colour;
+        this.x = x;
+        this.y = y;
+    }
+
+    tryWin(player) {
+        if (this.colour === player.colour && ruby.player === player && player.x === this.x && player.y === this.y) {
+            console.log(`The cunning player ${player.colour} WON THE GAME!!!1`);
+        }
+    }
+
+    draw(canvasContext) {
+        canvasContext.fillStyle = 'grey';
+
+        canvasContext.fillRect(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            GRID_SIZE, GRID_SIZE
+        );
+
+        canvasContext.strokeStyle = this.colour;
+
+        canvasContext.strokeRect(
+            this.x * GRID_SIZE, this.y * GRID_SIZE,
+            GRID_SIZE, GRID_SIZE
+        );
+    }
 }
 
-class Key {
+class Carryable {
+    constructor(type) {
+        this.player = null;
+        this.type = type;
+    }
+
+    tryPickup(player) {
+        if ((this.x === player.x) && (this.y === player.y)) {
+            if (this.player === null) {
+                console.log(`${player.colour}: picked up a ${this.type}!`);
+            }
+            else if (this.player !== player) {
+                console.log(`${player.colour}: stole a ${this.type} from ${this.player.colour}!`);
+            }
+
+            this.player = player;
+        }
+    }
+
+    tryMove(player) {
+        if (player === this.player) {
+            this.x = player.x;
+            this.y = player.y;
+        }
+    }
+}
+
+class Key extends Carryable {
     // Dropped on death of player
     // 1 spawns on each player's island
     // Must be taken to the gate to unlock it
     constructor(x, y) {
+        super('key');
         this.x = x;
         this.y = y;
-        this.player = null;
     }
 
     draw(canvasContext) {
@@ -119,19 +174,6 @@ class Key {
 
         canvasContext.strokeStyle = 'yellow';
         canvasContext.stroke();
-    }
-
-    tryPickup(player) {
-        if ((this.x === player.x) && (this.y === player.y)) {
-            this.player = player;
-        }
-    }
-
-    tryMove(player) {
-        if (player === this.player) {
-            this.x = player.x;
-            this.y = player.y;
-        }
     }
 }
 
@@ -176,26 +218,13 @@ class Gate {
 // ctx.bezierCurveTo(85, 25, 75, 37, 75, 40);
 // ctx.fill();
 
-class Ruby {
+class Ruby extends Carryable {
     // Dropped on death of player
     // Must be taken back to the player's machine in order to win
     constructor(x, y) {
+        super('ruby');
         this.x = x;
         this.y = y;
-        this.player = null;
-    }
-
-    tryPickup(player) {
-        if ((this.x === player.x) && (this.y === player.y)) {
-            this.player = player;
-        }
-    }
-
-    tryMove(player) {
-        if (player === this.player) {
-            this.x = player.x;
-            this.y = player.y;
-        }
     }
 
     draw(canvasContext) {
@@ -255,6 +284,10 @@ class Player {
             key.tryPickup(this);
             key.tryMove(this);
         }
+
+        for (let [_, m] of machines) {
+            m.tryWin(this);
+        }
     }
 
     moveUp() {
@@ -305,8 +338,9 @@ for (i = 0; i < 3; ++i) {
     keys.push(new Key(spawnCoordinates.x, spawnCoordinates.y));
 }
 
-// TODO: tidy up players that have disconnected...!
+// TODO: tidy up players that have disconnected (& their machines)...!
 let players = new Map();
+let machines = new Map();
 
 function chooseSpawnCoordinates()
 {
@@ -322,14 +356,18 @@ function redrawPlayingField() {
 
     gate.draw(canvasContext);
 
-    for (let [_, player] of players) {
-        player.draw(canvasContext);
+    for (let [_, m] of machines) {
+        m.draw(canvasContext);
+    }
+
+    for (let [_, p] of players) {
+        p.draw(canvasContext);
     }
 
     ruby.draw(canvasContext);
 
-    for (let key of keys) {
-        key.draw(canvasContext);
+    for (let k of keys) {
+        k.draw(canvasContext);
     }
 }
 
@@ -353,10 +391,15 @@ io.on('connection', (client) => {
 
         console.log(`Creating new player: ${playerId}!!`);
 
-        const spawnCoordinates = chooseSpawnCoordinates();
+        const playerSpawnCoordinates = chooseSpawnCoordinates();
 
-        const player = new Player(playerId, spawnCoordinates.x, spawnCoordinates.y);
+        const player = new Player(playerId, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
         players.set(playerId, player);
+
+        const machineSpawnCoordinates = chooseSpawnCoordinates();
+        const machine = new Machine(playerId, machineSpawnCoordinates.x, machineSpawnCoordinates.y);
+        machines.set(playerId, machine);
+
         redrawPlayingField();
         callback({ okay: true, text: 'okay'});
     });
@@ -369,6 +412,7 @@ io.on('connection', (client) => {
             return;
         }
 
+        machines.delete(playerId);
         players.delete(playerId);
         redrawPlayingField();
     });
@@ -379,7 +423,7 @@ io.on('connection', (client) => {
     });
 
     client.on('action', (playerId, action, callback) => {
-        console.log(`playerId: ${playerId} action: ${action}`);
+        console.log(`${playerId}: ${action}`);
 
         if (!players.has(playerId)) {
             console.warn(`Requested to control player ${playerId}, which doesn't exist!`);
