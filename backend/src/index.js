@@ -22,6 +22,7 @@ class Coords {
     }
 }
 
+// Superclass for rectangular areas that the player can move about on.
 class Land {
     constructor(x, y, width, height, canSpawn) {
         this.x = x;
@@ -31,8 +32,7 @@ class Land {
         this.canSpawn = canSpawn;
     }
 
-    getSpawnCoordinates()
-    {
+    getSpawnCoordinates() {
         let coords = [];
 
         if (this.canSpawn) {
@@ -48,7 +48,7 @@ class Land {
 
     on(x, y) {
         return (x >= this.x && x < (this.x + this.width) &&
-                y >= this.y && y < (this.y + this.height));
+            y >= this.y && y < (this.y + this.height));
     }
 };
 
@@ -58,7 +58,7 @@ class Island extends Land {
     // a key spawns here
     draw(canvasContext) {
         canvasContext.fillStyle = 'green';
-        
+
         canvasContext.fillRect(
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             this.width * GRID_SIZE, this.height * GRID_SIZE
@@ -91,8 +91,18 @@ class Machine {
     }
 
     tryWin(player) {
-        if (this.colour === player.colour && ruby.player === player && player.x === this.x && player.y === this.y) {
-            console.log(`The cunning player ${player.colour} WON THE GAME!!!1`);
+        if (player.x === this.x && player.y === this.y) {
+            if (this.colour === player.colour) {
+                if (ruby.player === player) {
+                    console.log(`The cunning player ${player.colour} WON THE GAME!!!1`);
+                }
+                else {
+                    console.log(`Sorry mate, you don't have the ruby!`);
+                }
+            }
+            else {
+                console.log(`Sorry mate, this isn't your machine!`);
+            }
         }
     }
 
@@ -113,6 +123,7 @@ class Machine {
     }
 }
 
+// Superclass for things that the player can pick up (or steal!) and carry around with them.
 class Carryable {
     constructor(type) {
         this.player = null;
@@ -151,11 +162,13 @@ class Key extends Carryable {
     }
 
     draw(canvasContext) {
+        canvasContext.save();
+        canvasContext.translate(this.x * GRID_SIZE, this.y * GRID_SIZE);
+
         canvasContext.beginPath();
 
         canvasContext.arc(
-            (this.x * GRID_SIZE) + KEY_CIRCLE_RADIUS,
-            (this.y * GRID_SIZE) + KEY_CIRCLE_RADIUS,
+            KEY_CIRCLE_RADIUS, KEY_CIRCLE_RADIUS,
             KEY_CIRCLE_RADIUS, 0, Math.PI * 2, false
         );
 
@@ -164,16 +177,18 @@ class Key extends Carryable {
 
         canvasContext.beginPath();
 
-        canvasContext.moveTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
-        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 4, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
-        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 4, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS * 2);
-        canvasContext.moveTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 3, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
-        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 3, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS * 2);
-        canvasContext.moveTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 7/2, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS);
-        canvasContext.lineTo(this.x * GRID_SIZE + KEY_CIRCLE_RADIUS * 7/2, this.y * GRID_SIZE + KEY_CIRCLE_RADIUS * 3/2);
+        canvasContext.moveTo(KEY_CIRCLE_RADIUS, KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(KEY_CIRCLE_RADIUS * 4, KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(KEY_CIRCLE_RADIUS * 4, KEY_CIRCLE_RADIUS * 2);
+        canvasContext.moveTo(KEY_CIRCLE_RADIUS * 3, KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(KEY_CIRCLE_RADIUS * 3, KEY_CIRCLE_RADIUS * 2);
+        canvasContext.moveTo(KEY_CIRCLE_RADIUS * 7 / 2, KEY_CIRCLE_RADIUS);
+        canvasContext.lineTo(KEY_CIRCLE_RADIUS * 7 / 2, KEY_CIRCLE_RADIUS * 2);
 
         canvasContext.strokeStyle = 'yellow';
         canvasContext.stroke();
+
+        canvasContext.restore();
     }
 }
 
@@ -252,7 +267,7 @@ class Player {
 
     draw(canvasContext) {
         canvasContext.fillStyle = this.colour;
-        
+
         canvasContext.fillRect(
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             GRID_SIZE, GRID_SIZE
@@ -342,8 +357,7 @@ for (i = 0; i < 3; ++i) {
 let players = new Map();
 let machines = new Map();
 
-function chooseSpawnCoordinates()
-{
+function chooseSpawnCoordinates() {
     return spawnCoordinates[Math.floor(Math.random() * spawnCoordinates.length)];
 }
 
@@ -385,7 +399,7 @@ io.on('connection', (client) => {
         if (players.has(playerId)) {
             const text = `Requested player ${playerId}, which is already in use!`
             console.log(text);
-            callback({ okay: false, text: text});
+            callback({ okay: false, text: text });
             return;
         }
 
@@ -401,7 +415,7 @@ io.on('connection', (client) => {
         machines.set(playerId, machine);
 
         redrawPlayingField();
-        callback({ okay: true, text: 'okay'});
+        callback({ okay: true, text: 'okay' });
     });
 
     client.on('leave', (playerId) => {
