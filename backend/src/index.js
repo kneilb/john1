@@ -276,6 +276,7 @@ class Player {
 
     tryMove(x, y) {
         if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
+            console.log(`${this.colour}: WANTED TO LEAVE THIS REALITY BEHIND!`);
             return;
         }
 
@@ -385,15 +386,15 @@ function redrawPlayingField() {
     }
 }
 
-io.on('connection', (client) => {
+io.on('connection', (socket) => {
     // TODO: use disconnect to remove players!
     console.log('A user connected!!');
 
-    client.on('disconnect', () => {
+    socket.on('disconnect', () => {
         console.log('A user disconnected!!');
     });
 
-    client.on('join', (playerId, callback) => {
+    socket.on('join', (playerId, callback) => {
         console.log(`join: ${playerId}`);
 
         if (players.has(playerId)) {
@@ -416,9 +417,10 @@ io.on('connection', (client) => {
 
         redrawPlayingField();
         callback({ okay: true, text: 'okay' });
+        io.emit('refresh', canvas.toDataURL());
     });
 
-    client.on('leave', (playerId) => {
+    socket.on('leave', (playerId) => {
         console.log(`leave: ${playerId}`)
 
         if (!players.has(playerId)) {
@@ -429,14 +431,15 @@ io.on('connection', (client) => {
         machines.delete(playerId);
         players.delete(playerId);
         redrawPlayingField();
+        io.emit('refresh', canvas.toDataURL());
     });
 
-    client.on('refresh', (callback) => {
+    socket.on('refresh', () => {
         console.log('client requested refresh');
-        callback(canvas.toDataURL());
+        socket.emit('refresh', canvas.toDataURL());
     });
 
-    client.on('action', (playerId, action, callback) => {
+    socket.on('action', (playerId, action) => {
         console.log(`${playerId}: ${action}`);
 
         if (!players.has(playerId)) {
@@ -459,15 +462,12 @@ io.on('connection', (client) => {
             case 'right':
                 player.moveRight();
                 break;
-            case 'gobble':
-                player.gobble();
-                return;
             default:
-                console.warn(`Unknown action ${action} for player ${playerId}`)
+                console.warn(`${playerId}: Unknown action ${action}!?`)
                 return;
         }
 
         redrawPlayingField();
-        callback(canvas.toDataURL());
+        io.emit('refresh', canvas.toDataURL());
     });
 });

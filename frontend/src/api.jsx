@@ -17,12 +17,17 @@ function leave(playerId) {
     socket.emit('leave', playerId);
 }
 
-function refresh(callback) {
-    socket.emit('refresh', response => callback(response));
+// Subscribe to 'refresh' messages, and request one now
+function refresh(onRefresh) {
+    socket.on('refresh', (response) => {
+        onRefresh(response);
+    });
+
+    socket.emit('refresh');
 }
 
-function action(playerId, command, callback) {
-    socket.emit('action', playerId, command, response => callback(response));
+function action(playerId, command) {
+    socket.emit('action', playerId, command);
 }
 
 //export { join, leave, refresh, action };

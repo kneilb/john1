@@ -52,7 +52,7 @@ export default function Game(props) {
             }
     
             if (command !== null) {
-                api.action(props.playerId, command, setCanvasSource);
+                api.action(props.playerId, command);
             }
         }
 
@@ -66,7 +66,7 @@ export default function Game(props) {
     function handleClick(id) {
         console.log(`click? ${id}`);
 
-        api.action(props.playerId, id, setCanvasSource);
+        api.action(props.playerId, id);
     }
 
     function handleExit(id) {
