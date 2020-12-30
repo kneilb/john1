@@ -17,6 +17,10 @@ function leave(playerId) {
     socket.emit('leave', playerId);
 }
 
+function requestRefresh() {
+    socket.emit('refresh');
+}
+
 function subscribeToRefresh(onRefresh) {
     socket.on('refresh', (response) => {
         onRefresh(response);
@@ -33,4 +37,4 @@ function action(playerId, command) {
     socket.emit('action', playerId, command);
 }
 
-export { join, leave, subscribeToRefresh, subscribeToMessages, action };
+export { join, leave, requestRefresh, subscribeToRefresh, subscribeToMessages, action };

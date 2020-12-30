@@ -24,12 +24,14 @@ export default function Game(props) {
             console.log(message);
         }
         api.subscribeToMessages(onMessage);
+
+        api.requestRefresh();
     }, []);
 
     useEffect(() => {
         function handleKey(event) {
             let command = null;
-    
+
             console.log(event.key);
             switch (event.key) {
                 case 'w':
@@ -55,7 +57,7 @@ export default function Game(props) {
                 default:
                     break;
             }
-    
+
             if (command !== null) {
                 api.action(props.playerId, command);
             }

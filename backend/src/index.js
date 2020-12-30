@@ -267,10 +267,9 @@ class Ruby extends Carryable {
 }
 
 class Player {
-    constructor(colour, socket, game, x, y) {
+    constructor(colour, socket, x, y) {
         this.colour = colour;
         this.socket = socket;
-        this.game = game;
         this.x = x;
         this.y = y;
     }
@@ -282,57 +281,6 @@ class Player {
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             GRID_SIZE, GRID_SIZE
         );
-    }
-
-    // TODO: Refactor to remove all the this.game. nonsense!
-    tryMove(x, y) {
-        if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
-            console.log(`${this.colour}: WANTED TO LEAVE THIS REALITY BEHIND!`);
-            return;
-        }
-
-        if (this.game.gate.on(x, y) && !this.game.gate.canPass(this)) {
-            let message = `NONE SHALL PASS!!!1`;
-            console.log(`${this.colour}: ${message}`);
-            this.socket.emit('message', message);
-            return;
-        }
-
-        if (!this.game.land.some((l) => l.on(x, y))) {
-            console.log(`${this.colour}: TRIED TO FALL OFF THE WORLD!`);
-            return;
-        }
-
-        this.x = x;
-        this.y = y;
-
-        this.game.ruby.tryPickup(this);
-        this.game.ruby.tryMove(this);
-
-        for (let key of this.game.keys) {
-            key.tryPickup(this);
-            key.tryMove(this);
-        }
-
-        for (let [_, m] of this.game.machines) {
-            m.tryWin(this);
-        }
-    }
-
-    moveUp() {
-        this.tryMove(this.x, this.y - 1);
-    }
-
-    moveDown() {
-        this.tryMove(this.x, this.y + 1);
-    }
-
-    moveLeft() {
-        this.tryMove(this.x - 1, this.y);
-    }
-
-    moveRight() {
-        this.tryMove(this.x + 1, this.y);
     }
 }
 
@@ -376,7 +324,10 @@ class Game {
     }
 
     chooseSpawnCoordinates() {
-        return this.spawnCoordinates[Math.floor(Math.random() * this.spawnCoordinates.length)];
+        const index = Math.floor(Math.random() * this.spawnCoordinates.length);
+        const coords = this.spawnCoordinates[index];
+        this.spawnCoordinates.splice(index, 1);
+        return coords;
     }
 
     redrawPlayingField() {
@@ -409,8 +360,7 @@ class Game {
 
     newPlayer(playerId, socket) {
         const playerSpawnCoordinates = this.chooseSpawnCoordinates();
-
-        const player = new Player(playerId, socket, this, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
+        const player = new Player(playerId, socket, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
         this.players.set(playerId, player);
 
         const machineSpawnCoordinates = this.chooseSpawnCoordinates();
@@ -435,27 +385,67 @@ class Game {
         }
 
         const player = this.players.get(playerId);
+        let newX = player.x;
+        let newY = player.y;
 
         switch (action) {
             case 'up':
-                player.moveUp();
+                newY -= 1;
                 break;
             case 'down':
-                player.moveDown();
+                newY += 1;
                 break;
             case 'left':
-                player.moveLeft();
+                newX -= 1;
                 break;
             case 'right':
-                player.moveRight();
+                newX += 1;
                 break;
             default:
                 console.warn(`${playerId}: Unknown action ${action}!?`)
                 return;
         }
 
-        this.redrawPlayingField();
-        io.emit('refresh', this.canvas.toDataURL());
+        if (this.tryMove(player, newX, newY)) {
+            this.redrawPlayingField();
+            io.emit('refresh', this.canvas.toDataURL());
+        }
+    }
+
+    tryMove(player, x, y) {
+        if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
+            console.log(`${player.colour}: WANTED TO LEAVE THIS REALITY BEHIND!`);
+            return false;
+        }
+
+        if (!this.land.some((l) => l.on(x, y))) {
+            console.log(`${player.colour}: TRIED TO FALL OFF THE WORLD!`);
+            return false;
+        }
+
+        if (this.gate.on(x, y) && !this.gate.canPass(player)) {
+            let message = `NONE SHALL PASS!!!1`;
+            console.log(`${player.colour}: ${message}`);
+            player.socket.emit('message', message);
+            return false;
+        }
+
+        player.x = x;
+        player.y = y;
+
+        this.ruby.tryPickup(player);
+        this.ruby.tryMove(player);
+
+        for (let k of this.keys) {
+            k.tryPickup(player);
+            k.tryMove(player);
+        }
+
+        for (let [_, m] of this.machines) {
+            m.tryWin(player);
+        }
+
+        return true;
     }
 }
 
@@ -495,12 +485,17 @@ io.on('connection', (socket) => {
         }
 
         game.removePlayer(playerId);
+
+        // Reset game if everyone has left
+        if (game.players.size === 0) {
+            game = new Game();
+        }
     });
 
-    // socket.on('refresh', () => {
-    //     console.log('client requested refresh');
-    //     socket.emit('refresh', canvas.toDataURL());
-    // });
+    socket.on('refresh', () => {
+        console.log('client requested refresh');
+        socket.emit('refresh', game.canvas.toDataURL());
+    });
 
     socket.on('action', (playerId, action) => {
         console.log(`${playerId}: ${action}`);
