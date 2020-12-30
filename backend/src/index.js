@@ -84,16 +84,17 @@ class Platform extends Land {
 
 class Machine {
     // take the ruby to your machine to win!
-    constructor(colour, x, y) {
+    constructor(colour, x, y, ruby) {
         this.colour = colour;
         this.x = x;
         this.y = y;
+        this.ruby = ruby;
     }
 
     tryWin(player) {
         if (player.x === this.x && player.y === this.y) {
             if (this.colour === player.colour) {
-                if (ruby.player === player) {
+                if (this.ruby.player === player) {
                     let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
                     console.log(message);
                     io.emit('message', message);
@@ -201,9 +202,10 @@ class Key extends Carryable {
 class Gate {
     // Needs 3 keys to open
     // Leads to the island with the ruby
-    constructor(x, y) {
+    constructor(x, y, keys) {
         this.x = x;
         this.y = y;
+        this.keys = keys;
     }
 
     on(x, y) {
@@ -211,7 +213,7 @@ class Gate {
     }
 
     canPass(player) {
-        return keys.every(key => key.player == player);
+        return this.keys.every(key => key.player == player);
     }
 
     draw(canvasContext) {
@@ -265,9 +267,10 @@ class Ruby extends Carryable {
 }
 
 class Player {
-    constructor(colour, socket, x, y) {
+    constructor(colour, socket, game, x, y) {
         this.colour = colour;
         this.socket = socket;
+        this.game = game;
         this.x = x;
         this.y = y;
     }
@@ -281,20 +284,21 @@ class Player {
         );
     }
 
+    // TODO: Refactor to remove all the this.game. nonsense!
     tryMove(x, y) {
         if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
             console.log(`${this.colour}: WANTED TO LEAVE THIS REALITY BEHIND!`);
             return;
         }
 
-        if (gate.on(x, y) && !gate.canPass(this)) {
+        if (this.game.gate.on(x, y) && !this.game.gate.canPass(this)) {
             let message = `NONE SHALL PASS!!!1`;
             console.log(`${this.colour}: ${message}`);
             this.socket.emit('message', message);
             return;
         }
 
-        if (!land.some((l) => l.on(x, y))) {
+        if (!this.game.land.some((l) => l.on(x, y))) {
             console.log(`${this.colour}: TRIED TO FALL OFF THE WORLD!`);
             return;
         }
@@ -302,15 +306,15 @@ class Player {
         this.x = x;
         this.y = y;
 
-        ruby.tryPickup(this);
-        ruby.tryMove(this);
+        this.game.ruby.tryPickup(this);
+        this.game.ruby.tryMove(this);
 
-        for (let key of keys) {
+        for (let key of this.game.keys) {
             key.tryPickup(this);
             key.tryMove(this);
         }
 
-        for (let [_, m] of machines) {
+        for (let [_, m] of this.game.machines) {
             m.tryWin(this);
         }
     }
@@ -332,131 +336,105 @@ class Player {
     }
 }
 
-const io = require('socket.io')(HTTP_LISTEN_PORT);
+class Game {
+    constructor() {
+        this.canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+        this.canvasContext = this.canvas.getContext('2d');
 
-const canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-const canvasContext = canvas.getContext('2d');
+        this.land = [
+            new Island(9, 0, 6, 5, true),
+            new Platform(3, 3, 6, 1),
+            new Platform(3, 4, 1, 3),
+            new Platform(15, 3, 6, 1),
+            new Platform(20, 4, 1, 3),
+            new Island(0, 7, 6, 5, true),
+            new Platform(6, 9, 12, 1),
+            new Island(18, 7, 6, 5, true),
+            new Platform(12, 10, 1, 2),
+            new Island(8, 12, 8, 7, false)
+        ];
 
-let land = [
-    new Island(9, 0, 6, 5, true),
-    new Platform(3, 3, 6, 1),
-    new Platform(3, 4, 1, 3),
-    new Platform(15, 3, 6, 1),
-    new Platform(20, 4, 1, 3),
-    new Island(0, 7, 6, 5, true),
-    new Platform(6, 9, 12, 1),
-    new Island(18, 7, 6, 5, true),
-    new Platform(12, 10, 1, 2),
-    new Island(8, 12, 8, 7, false)
-];
-let gate = new Gate(12, 11);
-let ruby = new Ruby(12, 15);
+        this.ruby = new Ruby(12, 15);
 
-let spawnCoordinates = [];
-for (l of land) {
-    spawnCoordinates.push(...l.getSpawnCoordinates());
-}
+        this.spawnCoordinates = [];
 
-let keys = [];
-for (i = 0; i < 3; ++i) {
-    const spawnCoordinates = chooseSpawnCoordinates();
-    keys.push(new Key(spawnCoordinates.x, spawnCoordinates.y));
-}
-
-// TODO: tidy up players that have disconnected (& their machines)...!
-let players = new Map();
-let machines = new Map();
-
-function chooseSpawnCoordinates() {
-    return spawnCoordinates[Math.floor(Math.random() * spawnCoordinates.length)];
-}
-
-function redrawPlayingField() {
-    canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let l of land) {
-        l.draw(canvasContext);
-    }
-
-    gate.draw(canvasContext);
-
-    for (let [_, m] of machines) {
-        m.draw(canvasContext);
-    }
-
-    for (let [_, p] of players) {
-        p.draw(canvasContext);
-    }
-
-    ruby.draw(canvasContext);
-
-    for (let k of keys) {
-        k.draw(canvasContext);
-    }
-}
-
-io.on('connection', (socket) => {
-    // TODO: use disconnect to remove players!
-    console.log('A user connected!!');
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected!!');
-    });
-
-    socket.on('join', (playerId, callback) => {
-        console.log(`join: ${playerId}`);
-
-        if (players.has(playerId)) {
-            const text = `Requested player ${playerId}, which is already in use!`
-            console.log(text);
-            callback({ okay: false, text: text });
-            return;
+        for (let l of this.land) {
+            this.spawnCoordinates.push(...l.getSpawnCoordinates());
         }
 
-        console.log(`Creating new player: ${playerId}!!`);
-
-        const playerSpawnCoordinates = chooseSpawnCoordinates();
-
-        const player = new Player(playerId, socket, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
-        players.set(playerId, player);
-
-        const machineSpawnCoordinates = chooseSpawnCoordinates();
-        const machine = new Machine(playerId, machineSpawnCoordinates.x, machineSpawnCoordinates.y);
-        machines.set(playerId, machine);
-
-        redrawPlayingField();
-        callback({ okay: true, text: 'okay' });
-        io.emit('refresh', canvas.toDataURL());
-    });
-
-    socket.on('leave', (playerId) => {
-        console.log(`leave: ${playerId}`)
-
-        if (!players.has(playerId)) {
-            console.log(`Requested to delete player ${playerId}, which does not exist!`);
-            return;
+        this.keys = [];
+        for (let i = 0; i < 3; ++i) {
+            const spawnCoordinates = this.chooseSpawnCoordinates();
+            this.keys.push(new Key(spawnCoordinates.x, spawnCoordinates.y));
         }
 
-        machines.delete(playerId);
-        players.delete(playerId);
-        redrawPlayingField();
-        io.emit('refresh', canvas.toDataURL());
-    });
+        this.gate = new Gate(12, 11, this.keys);
 
-    socket.on('refresh', () => {
-        console.log('client requested refresh');
-        socket.emit('refresh', canvas.toDataURL());
-    });
+        // TODO: tidy up players that have disconnected (& their machines)...!
+        this.players = new Map();
+        this.machines = new Map();
+    }
 
-    socket.on('action', (playerId, action) => {
-        console.log(`${playerId}: ${action}`);
+    chooseSpawnCoordinates() {
+        return this.spawnCoordinates[Math.floor(Math.random() * this.spawnCoordinates.length)];
+    }
 
-        if (!players.has(playerId)) {
+    redrawPlayingField() {
+        this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        for (let l of this.land) {
+            l.draw(this.canvasContext);
+        }
+
+        this.gate.draw(this.canvasContext);
+
+        for (let [_, m] of this.machines) {
+            m.draw(this.canvasContext);
+        }
+
+        for (let [_, p] of this.players) {
+            p.draw(this.canvasContext);
+        }
+
+        this.ruby.draw(this.canvasContext);
+
+        for (let k of this.keys) {
+            k.draw(this.canvasContext);
+        }
+    }
+
+    hasPlayer(playerId) {
+        return this.players.has(playerId);
+    }
+
+    newPlayer(playerId, socket) {
+        const playerSpawnCoordinates = this.chooseSpawnCoordinates();
+
+        const player = new Player(playerId, socket, this, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
+        this.players.set(playerId, player);
+
+        const machineSpawnCoordinates = this.chooseSpawnCoordinates();
+        const machine = new Machine(playerId, machineSpawnCoordinates.x, machineSpawnCoordinates.y, this.ruby);
+        this.machines.set(playerId, machine);
+
+        this.redrawPlayingField();
+        io.emit('refresh', this.canvas.toDataURL());
+    }
+
+    removePlayer(playerId) {
+        this.machines.delete(playerId);
+        this.players.delete(playerId);
+        this.redrawPlayingField();
+        io.emit('refresh', this.canvas.toDataURL());
+    }
+
+    action(playerId, action) {
+        if (!this.players.has(playerId)) {
             console.warn(`Requested to control player ${playerId}, which doesn't exist!`);
             return;
         }
 
-        const player = players.get(playerId);
+        const player = this.players.get(playerId);
 
         switch (action) {
             case 'up':
@@ -476,7 +454,57 @@ io.on('connection', (socket) => {
                 return;
         }
 
-        redrawPlayingField();
-        io.emit('refresh', canvas.toDataURL());
+        this.redrawPlayingField();
+        io.emit('refresh', this.canvas.toDataURL());
+    }
+}
+
+const io = require('socket.io')(HTTP_LISTEN_PORT);
+let game = new Game();
+
+io.on('connection', (socket) => {
+    // TODO: use disconnect to remove players!
+    console.log('A user connected!!');
+
+    socket.on('disconnect', () => {
+        console.log('A user disconnected!!');
+    });
+
+    socket.on('join', (playerId, callback) => {
+        console.log(`join: ${playerId}`);
+
+        if (game.hasPlayer(playerId)) {
+            const text = `Requested player ${playerId}, which is already in use!`
+            console.log(text);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        console.log(`Creating new player: ${playerId}!!`);
+
+        game.newPlayer(playerId, socket);
+        callback({ okay: true, text: 'okay' });
+    });
+
+    socket.on('leave', (playerId) => {
+        console.log(`leave: ${playerId}`)
+
+        if (!game.hasPlayer(playerId)) {
+            console.log(`Requested to delete player ${playerId}, which does not exist!`);
+            return;
+        }
+
+        game.removePlayer(playerId);
+    });
+
+    // socket.on('refresh', () => {
+    //     console.log('client requested refresh');
+    //     socket.emit('refresh', canvas.toDataURL());
+    // });
+
+    socket.on('action', (playerId, action) => {
+        console.log(`${playerId}: ${action}`);
+
+        game.action(playerId, action);
     });
 });
