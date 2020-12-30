@@ -94,14 +94,20 @@ class Machine {
         if (player.x === this.x && player.y === this.y) {
             if (this.colour === player.colour) {
                 if (ruby.player === player) {
-                    console.log(`The cunning player ${player.colour} WON THE GAME!!!1`);
+                    let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
+                    console.log(message);
+                    io.emit('message', message);
                 }
                 else {
-                    console.log(`Sorry mate, you don't have the ruby!`);
+                    let message = `Sorry mate, you don't have the ruby!`;
+                    console.log(`${player.colour}: ${message}`);
+                    player.socket.emit('message', message);
                 }
             }
             else {
-                console.log(`Sorry mate, this isn't your machine!`);
+                let message = `Sorry mate, this isn't your machine!`;
+                console.log(`${player.colour}: ${message}`);
+                player.socket.emit('message', message);
             }
         }
     }
@@ -259,10 +265,11 @@ class Ruby extends Carryable {
 }
 
 class Player {
-    constructor(colour, x, y) {
+    constructor(colour, socket, x, y) {
+        this.colour = colour;
+        this.socket = socket;
         this.x = x;
         this.y = y;
-        this.colour = colour;
     }
 
     draw(canvasContext) {
@@ -281,7 +288,9 @@ class Player {
         }
 
         if (gate.on(x, y) && !gate.canPass(this)) {
-            console.log(`${this.colour}: NONE SHALL PASS!!!1`);
+            let message = `NONE SHALL PASS!!!1`;
+            console.log(`${this.colour}: ${message}`);
+            this.socket.emit('message', message);
             return;
         }
 
@@ -408,7 +417,7 @@ io.on('connection', (socket) => {
 
         const playerSpawnCoordinates = chooseSpawnCoordinates();
 
-        const player = new Player(playerId, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
+        const player = new Player(playerId, socket, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
         players.set(playerId, player);
 
         const machineSpawnCoordinates = chooseSpawnCoordinates();

@@ -1,5 +1,5 @@
 import React from 'react';
-import api from './api';
+import * as api from './api';
 
 function Chooser(props) {
     return (

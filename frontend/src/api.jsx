@@ -1,6 +1,6 @@
-import openSocket from 'socket.io-client';
+import { io } from 'socket.io-client';
 
-const socket = openSocket();
+const socket = io();
 
 function join(playerId, onAccept, onReject) {
     socket.emit('join', playerId, (response) => {
@@ -17,19 +17,20 @@ function leave(playerId) {
     socket.emit('leave', playerId);
 }
 
-// Subscribe to 'refresh' messages, and request one now
-function refresh(onRefresh) {
+function subscribeToRefresh(onRefresh) {
     socket.on('refresh', (response) => {
         onRefresh(response);
     });
+}
 
-    socket.emit('refresh');
+function subscribeToMessages(onMessage) {
+    socket.on('message', (message) => {
+        onMessage(message);
+    });
 }
 
 function action(playerId, command) {
     socket.emit('action', playerId, command);
 }
 
-//export { join, leave, refresh, action };
-const api = { join, leave, refresh, action };
-export default api;
+export { join, leave, subscribeToRefresh, subscribeToMessages, action };

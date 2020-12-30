@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from './api';
+import * as api from './api';
 
 function Action(props) {
     return (
@@ -17,8 +17,13 @@ export default function Game(props) {
     const [canvasSource, setCanvasSource] = useState();
 
     useEffect(() => {
-        console.log('refresh');
-        api.refresh(setCanvasSource);
+        console.log('Subscribe to refresh & messages!');
+        api.subscribeToRefresh(setCanvasSource);
+
+        function onMessage(message) {
+            console.log(message);
+        }
+        api.subscribeToMessages(onMessage);
     }, []);
 
     useEffect(() => {
