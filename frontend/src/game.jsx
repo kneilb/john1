@@ -15,6 +15,7 @@ function Action(props) {
 export default function Game(props) {
 
     const [canvasSource, setCanvasSource] = useState();
+    const [messages, setMessages] = useState();
 
     useEffect(() => {
         console.log('Subscribe to refresh & messages!');
@@ -22,6 +23,7 @@ export default function Game(props) {
 
         function onMessage(message) {
             console.log(message);
+            setMessages(message);
         }
         api.subscribeToMessages(onMessage);
 
@@ -91,6 +93,7 @@ export default function Game(props) {
             <Action id='left' name='Left' onClick={handleClick} />
             <Action id='right' name='Right' onClick={handleClick} />
             <Action id='exit' name='Exit' onClick={handleExit} />
+            <p>{messages}</p>
         </div>
     );
 }
