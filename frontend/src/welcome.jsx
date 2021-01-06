@@ -1,18 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import * as api from './api';
+import { Button, Radio, Select } from 'antd';
 
-function Chooser(props) {
-    return (
-        <button
-            id={props.id}
-            type=""
-            onClick={() => { props.onClick(props.id); }}>
-            {props.name}
-        </button>
-    );
-}
+const { Option } = Select;
 
 export default function Welcome(props) {
+
+    const playerOptions = [
+        { label: 'Red', value: 'red' },
+        { label: 'Green', value: 'green' },
+        { label: 'Yellow', value: 'yellow' },
+        { label: 'Blue', value: 'blue' },
+        { label: 'Orange', value: 'orange' }
+    ];
+
+    const [availableGames, setAvailableGames] = useState([]);
+    const [selectedPlayer, setSelectedPlayer] = useState(playerOptions[0].value);
+
+    useEffect(() => {
+        async function onLoad() {
+            const games = await api.getGames();
+            console.log(games);
+            setAvailableGames(games);
+        }
+
+        onLoad();
+
+    }, []);
 
     function handleClick(id) {
         console.log(`I want to play as ${id}`);
@@ -33,13 +47,26 @@ export default function Welcome(props) {
         api.join(id, onAccept, onReject);
     }
 
+    let options = [];
+    for (let game of availableGames) {
+        console.log(`adding game ${game.id}`);
+        options.push(<Option key={game.id} value={game.id}>{game.name}</Option>);
+    }
+
     return (
         <div>
-            <Chooser id="red" name="Red" onClick={handleClick} />
-            <Chooser id="green" name="Green" onClick={handleClick} />
-            <Chooser id="yellow" name="Yellow" onClick={handleClick} />
-            <Chooser id="blue" name="Blue" onClick={handleClick} />
-            <Chooser id="orange" name="Orange" onClick={handleClick} />
+            <Radio.Group options={playerOptions} onChange={(e) => { setSelectedPlayer(e.target.value); }} value={selectedPlayer} />
+            <Select
+                showSearch
+                style={{ width: 200 }}
+                placeholder='Select a game'
+                filterOption={(input, option) =>
+                    option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+            >
+                {options}
+            </Select>
+            <Button type='primary' onClick={() => { handleClick(selectedPlayer) }} >Start Game!!!1</Button>
         </div>
     );
 };

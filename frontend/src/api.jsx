@@ -37,4 +37,12 @@ function action(playerId, command) {
     socket.emit('action', playerId, command);
 }
 
-export { join, leave, requestRefresh, subscribeToRefresh, subscribeToMessages, action };
+async function getGames() {
+    return new Promise((resolve, reject) => {
+        socket.emit('list_games', (games) => {
+            resolve(games);
+        });
+    });
+}
+
+export { action, getGames, join, leave, requestRefresh, subscribeToMessages, subscribeToRefresh };

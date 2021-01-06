@@ -13,6 +13,7 @@ const Y_MAX = Math.floor(CANVAS_HEIGHT / GRID_SIZE) - 1;
 
 const RUBY_RADIUS = GRID_SIZE / 4;
 const KEY_CIRCLE_RADIUS = GRID_SIZE / 8;
+const KEY_CIRCLE_HOLE_RADIUS = KEY_CIRCLE_RADIUS / 2;
 const GATE_RADIUS = GRID_SIZE / 2;
 
 class Coords {
@@ -47,8 +48,8 @@ class Land {
     }
 
     on(x, y) {
-        return (x >= this.x && x < (this.x + this.width) &&
-            y >= this.y && y < (this.y + this.height));
+        return x >= this.x && x < this.x + this.width &&
+               y >= this.y && y < this.y + this.height;
     }
 };
 
@@ -68,6 +69,7 @@ class Island extends Land {
 
 class Platform extends Land {
     // connects islands
+    // things cannot auto-spawn here (players, keys, machines)
     constructor(x, y, width, height) {
         super(x, y, width, height, false);
     }
@@ -180,6 +182,16 @@ class Key extends Carryable {
         );
 
         canvasContext.fillStyle = 'yellow';
+        canvasContext.fill();
+
+        canvasContext.beginPath();
+
+        canvasContext.arc(
+            KEY_CIRCLE_RADIUS, KEY_CIRCLE_RADIUS,
+            KEY_CIRCLE_HOLE_RADIUS, 0, Math.PI * 2, false
+        );
+
+        canvasContext.fillStyle = 'black';
         canvasContext.fill();
 
         canvasContext.beginPath();
@@ -323,6 +335,8 @@ class Game {
         this.machines = new Map();
     }
 
+    // Pick coordinates to spawn "something"
+    // Removes items from the list to ensure more than one thing cannot spawn on the same spot
     chooseSpawnCoordinates() {
         const index = Math.floor(Math.random() * this.spawnCoordinates.length);
         const coords = this.spawnCoordinates[index];
@@ -454,10 +468,10 @@ let game = new Game();
 
 io.on('connection', (socket) => {
     // TODO: use disconnect to remove players!
-    console.log('A user connected!!');
+    console.log(`User ${socket.id} connected!!`);
 
     socket.on('disconnect', () => {
-        console.log('A user disconnected!!');
+        console.log(`User ${socket.id} disconnected!!`);
     });
 
     socket.on('join', (playerId, callback) => {
@@ -501,5 +515,14 @@ io.on('connection', (socket) => {
         console.log(`${playerId}: ${action}`);
 
         game.action(playerId, action);
+    });
+
+    socket.on('list_games', (callback) => {
+        const games = [{
+            'id': 'game1',
+            'name': 'The First Game'
+        }];
+
+        callback(games);
     });
 });
