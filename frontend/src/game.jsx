@@ -61,7 +61,7 @@ export default function Game(props) {
             }
 
             if (command !== null) {
-                api.action(props.playerId, command);
+                api.action(command);
             }
         }
 
@@ -72,16 +72,16 @@ export default function Game(props) {
         };
     }, [props.playerId]);
 
-    function handleClick(id) {
-        console.log(`click? ${id}`);
+    function handleClick(command) {
+        console.log(`click? ${command}`);
 
-        api.action(props.playerId, id);
+        api.action(command);
     }
 
-    function handleExit(id) {
+    function handleExit(command) {
         console.log('EXIT');
 
-        api.leave(props.playerId);
+        api.leave();
         props.onExit();
     }
 

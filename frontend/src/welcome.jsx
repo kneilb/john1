@@ -15,6 +15,7 @@ export default function Welcome(props) {
     ];
 
     const [availableGames, setAvailableGames] = useState([]);
+    const [selectedGame, setSelectedGame] = useState();
     const [selectedPlayer, setSelectedPlayer] = useState(playerOptions[0].value);
 
     useEffect(() => {
@@ -28,23 +29,23 @@ export default function Welcome(props) {
 
     }, []);
 
-    function handleClick(id) {
-        console.log(`I want to play as ${id}`);
+    function handleClick() {
+        console.log(`I want to play as ${selectedPlayer}`);
 
         // TODO: can ignore rejection & just carry on, taking control of the existing player!!
         // TODO: The "feature" outlined above is kinda handy for testing - hence the commented out code.
         // TODO: add auth via a randomly generated cookie, or just use the socket.io connection?
-        function onAccept(text) {
-            props.onSelect(id);
+        function onAccept() {
+            props.onSelect(selectedPlayer);
         }
 
         function onReject(text) {
             console.error(`Error: ${text}`);
             //props.onError(id);
-            props.onSelect(id);
+            props.onSelect(selectedPlayer);
         }
 
-        api.join(id, onAccept, onReject);
+        api.join(selectedPlayer, selectedGame, onAccept, onReject);
     }
 
     let options = [];
@@ -55,18 +56,15 @@ export default function Welcome(props) {
 
     return (
         <div>
-            <Radio.Group options={playerOptions} onChange={(e) => { setSelectedPlayer(e.target.value); }} value={selectedPlayer} />
+            <Radio.Group options={playerOptions} onChange={(e) => setSelectedPlayer(e.target.value)} value={selectedPlayer} />
             <Select
-                showSearch
                 style={{ width: 200 }}
+                onChange={(value) => setSelectedGame(value)}
                 placeholder='Select a game'
-                filterOption={(input, option) =>
-                    option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
             >
                 {options}
             </Select>
-            <Button type='primary' onClick={() => { handleClick(selectedPlayer) }} >Start Game!!!1</Button>
+            <Button type='primary' onClick={handleClick} >Start Game!!!1</Button>
         </div>
     );
 };

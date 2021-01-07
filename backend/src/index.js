@@ -133,7 +133,7 @@ class Machine {
 }
 
 // Superclass for things that the player can pick up (or steal!) and carry around with them.
-class Carryable {
+class CanBeCarried {
     constructor(type) {
         this.player = null;
         this.type = type;
@@ -160,7 +160,7 @@ class Carryable {
     }
 }
 
-class Key extends Carryable {
+class Key extends CanBeCarried {
     // Dropped on death of player
     // 1 spawns on each player's island
     // Must be taken to the gate to unlock it
@@ -225,7 +225,7 @@ class Gate {
     }
 
     canPass(player) {
-        return this.keys.every(key => key.player == player);
+        return this.keys.every((key) => key.player == player);
     }
 
     draw(canvasContext) {
@@ -253,7 +253,7 @@ class Gate {
 // ctx.bezierCurveTo(85, 25, 75, 37, 75, 40);
 // ctx.fill();
 
-class Ruby extends Carryable {
+class Ruby extends CanBeCarried {
     // Dropped on death of player
     // Must be taken back to the player's machine in order to win
     constructor(x, y) {
@@ -297,7 +297,8 @@ class Player {
 }
 
 class Game {
-    constructor() {
+    constructor(name) {
+        this.name = name;
         this.canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
         this.canvasContext = this.canvas.getContext('2d');
 
@@ -383,6 +384,8 @@ class Game {
 
         this.redrawPlayingField();
         io.emit('refresh', this.canvas.toDataURL());
+
+        return player;
     }
 
     removePlayer(playerId) {
@@ -416,7 +419,7 @@ class Game {
                 newX += 1;
                 break;
             default:
-                console.warn(`${playerId}: Unknown action ${action}!?`)
+                console.warn(`${playerId}: Unknown action ${action}!?`);
                 return;
         }
 
@@ -464,22 +467,34 @@ class Game {
 }
 
 const io = require('socket.io')(HTTP_LISTEN_PORT);
-let game = new Game();
+
+let games = new Map();
+games.set('game1', new Game('The First Game'));
 
 io.on('connection', (socket) => {
-    // TODO: use disconnect to remove players!
     console.log(`User ${socket.id} connected!!`);
 
     socket.on('disconnect', () => {
         console.log(`User ${socket.id} disconnected!!`);
+        // TODO: use disconnect to remove players!?
+        // Or use cookies??
     });
 
-    socket.on('join', (playerId, callback) => {
-        console.log(`join: ${playerId}`);
+    socket.on('join', (playerId, gameId, callback) => {
+        console.log(`join: ${playerId} to ${gameId}`);
+
+        if (!games.has(gameId)) {
+            const text = `Requested to join game ${gameId}, which does not exist!`;
+            console.log(`join: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        const game = games.get(gameId);
 
         if (game.hasPlayer(playerId)) {
-            const text = `Requested player ${playerId}, which is already in use!`
-            console.log(text);
+            const text = `Requested to join as player ${playerId}, which is already in use!`;
+            console.log(`join: ${text}`);
             callback({ okay: false, text: text });
             return;
         }
@@ -487,42 +502,132 @@ io.on('connection', (socket) => {
         console.log(`Creating new player: ${playerId}!!`);
 
         game.newPlayer(playerId, socket);
-        callback({ okay: true, text: 'okay' });
+
+        socket.gameId = gameId;
+        socket.playerId = playerId;
+
+        callback({ okay: true });
     });
 
-    socket.on('leave', (playerId) => {
-        console.log(`leave: ${playerId}`)
+    socket.on('leave', (callback) => {
+        const gameId = socket.gameId || null;
+        const playerId = socket.playerId || null;
+
+        console.log(`leave: ${playerId} from ${gameId}`);
+
+        if (!games.has(gameId)) {
+            const text = `Requested to leave game ${gameId}, which does not exist!`;
+            console.log(`leave: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        const game = games.get(gameId);
 
         if (!game.hasPlayer(playerId)) {
-            console.log(`Requested to delete player ${playerId}, which does not exist!`);
+            const text = `Requested to remove player ${playerId}, which does not exist!`;
+            console.log(`leave: ${text}`);
+            callback({ okay: false, text: text });
             return;
         }
 
         game.removePlayer(playerId);
+        callback({ okay: true });
 
-        // Reset game if everyone has left
-        if (game.players.size === 0) {
-            game = new Game();
-        }
+        // Delete game if everyone has left
+        // if (!game.players) {
+        //     console.log(`leave: deleting empty game ${gameId}`);
+        //     games.delete(gameId);
+        // }
     });
 
     socket.on('refresh', () => {
-        console.log('client requested refresh');
+        const gameId = socket.gameId || null;
+
+        if (!games.has(gameId)) {
+            return;
+        }
+
+        const game = games.get(gameId);
+
+        console.log(`${socket.id} requested refresh`);
         socket.emit('refresh', game.canvas.toDataURL());
     });
 
-    socket.on('action', (playerId, action) => {
-        console.log(`${playerId}: ${action}`);
+    socket.on('action', (action) => {
+        const gameId = socket.gameId || null;
+        const playerId = socket.playerId || null;
+
+        console.log(`action: ${gameId} ${playerId} -> ${action}`);
+
+        if (!games.has(gameId)) {
+            return;
+        }
+
+        const game = games.get(gameId);
 
         game.action(playerId, action);
     });
 
-    socket.on('list_games', (callback) => {
-        const games = [{
-            'id': 'game1',
-            'name': 'The First Game'
-        }];
+    socket.on('getGames', (callback) => {
+        let games_list = [];
 
-        callback(games);
+        for (let [id, gameData] of games) {
+            games_list.push({ id: id, name: gameData.name });
+        }
+
+        callback(games_list);
+    });
+
+    socket.on('createGame', (gameData, callback) => {
+        console.log(`createGame: ${gameData}`);
+
+        if (!gameData.has('id')) {
+            const text = `Invalid gameData (no id): ${gameData}`;
+            console.log(`createGame: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        const gameId = gameData.get('id');
+
+        // TODO: allow JSON to define "map"?
+        if (!gameData.has('name')) {
+            const text = `Invalid gameData (no name): ${gameData}`;
+            console.log(`createGame: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        const gameName = gameData.get('name');
+
+        if (games.has(gameId)) {
+            const text = `Requested to create game ${gameId}, which already exists!`;
+            console.log(`createGame: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        if (games.some((g) => g.name == gameName)) {
+            const text = `Requested to create game called ${gameName}, which already exists!`;
+            console.log(`createGame: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
+
+        games.set(playerId, new Game(gameName));
+
+        callback({okay: true});
+    });
+
+    socket.on('deleteGame', (gameId, callback) => {
+        console.log(`deleteGame: ${gameId}`);
+
+        if (!game.players) {
+            console.log(`deleteGame: deleting empty game ${gameId}`);
+            games.delete(gameId);
+        }
+
+        callback({okay: true});
     });
 });

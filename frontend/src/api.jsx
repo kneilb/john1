@@ -2,10 +2,10 @@ import { io } from 'socket.io-client';
 
 const socket = io();
 
-function join(playerId, onAccept, onReject) {
-    socket.emit('join', playerId, (response) => {
+function join(playerId, gameId, onAccept, onReject) {
+    socket.emit('join', playerId, gameId, (response) => {
         if (response.okay) {
-            onAccept(response.text);
+            onAccept();
         }
         else {
             onReject(response.text);
@@ -13,8 +13,10 @@ function join(playerId, onAccept, onReject) {
     });
 }
 
-function leave(playerId) {
-    socket.emit('leave', playerId);
+function leave() {
+    socket.emit('leave', (response) => {
+        console.log(`leave: ${response}`)
+    });
 }
 
 function requestRefresh() {
@@ -33,16 +35,38 @@ function subscribeToMessages(onMessage) {
     });
 }
 
-function action(playerId, command) {
-    socket.emit('action', playerId, command);
+function action(action) {
+    socket.emit('action', action);
 }
 
 async function getGames() {
     return new Promise((resolve, reject) => {
-        socket.emit('list_games', (games) => {
+        socket.emit('getGames', (games) => {
             resolve(games);
         });
     });
 }
 
-export { action, getGames, join, leave, requestRefresh, subscribeToMessages, subscribeToRefresh };
+function createGame(gameData, onAccept, onReject) {
+    socket.emit('createGame', gameData, (response) => {
+        if (response.okay) {
+            onAccept();
+        }
+        else {
+            onReject(response.text);
+        }
+    });
+}
+
+function deleteGame(gameId, onAccept, onReject) {
+    socket.emit('deleteGame', gameId, (response) => {
+        if (response.okay) {
+            onAccept();
+        }
+        else {
+            onReject(response.text);
+        }
+    });
+}
+
+export { action, createGame, getGames, deleteGame, join, leave, requestRefresh, subscribeToMessages, subscribeToRefresh };
