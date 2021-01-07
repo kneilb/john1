@@ -99,6 +99,7 @@ class Machine {
                 if (this.ruby.player === player) {
                     let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
                     console.log(message);
+                    // TODO: use per-game rooms
                     io.emit('message', message);
                 }
                 else {
@@ -383,6 +384,7 @@ class Game {
         this.machines.set(playerId, machine);
 
         this.redrawPlayingField();
+        // TODO: use per-game rooms
         io.emit('refresh', this.canvas.toDataURL());
 
         return player;
@@ -392,6 +394,7 @@ class Game {
         this.machines.delete(playerId);
         this.players.delete(playerId);
         this.redrawPlayingField();
+        // TODO: use per-game rooms
         io.emit('refresh', this.canvas.toDataURL());
     }
 
@@ -425,6 +428,7 @@ class Game {
 
         if (this.tryMove(player, newX, newY)) {
             this.redrawPlayingField();
+            // TODO: use per-game rooms
             io.emit('refresh', this.canvas.toDataURL());
         }
     }
@@ -466,6 +470,7 @@ class Game {
     }
 }
 
+const { v4: uuid } = require('uuid');
 const io = require('socket.io')(HTTP_LISTEN_PORT);
 
 let games = new Map();
@@ -582,24 +587,21 @@ io.on('connection', (socket) => {
     socket.on('createGame', (gameData, callback) => {
         console.log(`createGame: ${gameData}`);
 
-        if (!gameData.has('id')) {
-            const text = `Invalid gameData (no id): ${gameData}`;
-            console.log(`createGame: ${text}`);
-            callback({ okay: false, text: text });
-            return;
+        if (!gameData.id) {
+            gameData.id = uuid();
         }
 
-        const gameId = gameData.get('id');
+        const gameId = gameData.id;
 
         // TODO: allow JSON to define "map"?
-        if (!gameData.has('name')) {
+        if (!gameData.name) {
             const text = `Invalid gameData (no name): ${gameData}`;
             console.log(`createGame: ${text}`);
             callback({ okay: false, text: text });
             return;
         }
 
-        const gameName = gameData.get('name');
+        const gameName = gameData.name;
 
         if (games.has(gameId)) {
             const text = `Requested to create game ${gameId}, which already exists!`;
@@ -608,14 +610,14 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (games.some((g) => g.name == gameName)) {
+        if ([...games.values()].some((g) => g.name == gameName)) {
             const text = `Requested to create game called ${gameName}, which already exists!`;
             console.log(`createGame: ${text}`);
             callback({ okay: false, text: text });
             return;
         }
 
-        games.set(playerId, new Game(gameName));
+        games.set(gameId, new Game(gameName));
 
         callback({okay: true});
     });
