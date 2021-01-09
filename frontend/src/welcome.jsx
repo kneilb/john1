@@ -26,8 +26,15 @@ export default function Welcome(props) {
     }
 
     useEffect(() => {
+        // Load available games, reload on an interval
         loadAvailableGames();
-    });
+        const interval = setInterval(() => {
+            loadAvailableGames();
+        }, 1000);
+
+        // Clean up on unmount
+        return () => clearInterval(interval);
+    }, []);
 
     function handleStartGame() {
         console.log(`I want to play as ${selectedPlayer}`);
