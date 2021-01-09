@@ -97,10 +97,7 @@ class Machine {
         if (player.x === this.x && player.y === this.y) {
             if (this.colour === player.colour) {
                 if (this.ruby.player === player) {
-                    let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
-                    console.log(message);
-                    // TODO: use per-game rooms
-                    io.emit('message', message);
+                    return true;
                 }
                 else {
                     let message = `Sorry mate, you don't have the ruby!`;
@@ -114,6 +111,7 @@ class Machine {
                 player.socket.emit('message', message);
             }
         }
+        return false;
     }
 
     draw(canvasContext) {
@@ -298,7 +296,8 @@ class Player {
 }
 
 class Game {
-    constructor(name) {
+    constructor(id, name) {
+        this.id = id;
         this.name = name;
         this.canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
         this.canvasContext = this.canvas.getContext('2d');
@@ -368,6 +367,8 @@ class Game {
         for (let k of this.keys) {
             k.draw(this.canvasContext);
         }
+
+        io.to(this.id).emit('refresh', this.canvas.toDataURL());
     }
 
     hasPlayer(playerId) {
@@ -383,19 +384,20 @@ class Game {
         const machine = new Machine(playerId, machineSpawnCoordinates.x, machineSpawnCoordinates.y, this.ruby);
         this.machines.set(playerId, machine);
 
+        player.socket.join(this.id);
         this.redrawPlayingField();
-        // TODO: use per-game rooms
-        io.emit('refresh', this.canvas.toDataURL());
 
         return player;
     }
 
     removePlayer(playerId) {
+        const player = this.players.get(playerId);
+        player.socket.leave(this.id);
+
         this.machines.delete(playerId);
         this.players.delete(playerId);
+
         this.redrawPlayingField();
-        // TODO: use per-game rooms
-        io.emit('refresh', this.canvas.toDataURL());
     }
 
     action(playerId, action) {
@@ -428,8 +430,6 @@ class Game {
 
         if (this.tryMove(player, newX, newY)) {
             this.redrawPlayingField();
-            // TODO: use per-game rooms
-            io.emit('refresh', this.canvas.toDataURL());
         }
     }
 
@@ -463,7 +463,11 @@ class Game {
         }
 
         for (let [_, m] of this.machines) {
-            m.tryWin(player);
+            if (m.tryWin(player)) {
+                let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
+                console.log(message);
+                io.to(this.id).emit('message');
+            }
         }
 
         return true;
@@ -474,7 +478,7 @@ const { v4: uuid } = require('uuid');
 const io = require('socket.io')(HTTP_LISTEN_PORT);
 
 let games = new Map();
-games.set('game1', new Game('The First Game'));
+games.set('game1', new Game('game1', 'The First Game'));
 
 io.on('connection', (socket) => {
     console.log(`User ${socket.id} connected!!`);
@@ -577,8 +581,8 @@ io.on('connection', (socket) => {
     socket.on('getGames', (callback) => {
         let games_list = [];
 
-        for (let [id, gameData] of games) {
-            games_list.push({ id: id, name: gameData.name });
+        for (let [gameId, gameData] of games) {
+            games_list.push({ id: gameId, name: gameData.name });
         }
 
         callback(games_list);
@@ -593,7 +597,6 @@ io.on('connection', (socket) => {
 
         const gameId = gameData.id;
 
-        // TODO: allow JSON to define "map"?
         if (!gameData.name) {
             const text = `Invalid gameData (no name): ${gameData}`;
             console.log(`createGame: ${text}`);
@@ -617,7 +620,8 @@ io.on('connection', (socket) => {
             return;
         }
 
-        games.set(gameId, new Game(gameName));
+        // TODO: allow JSON to define "map"?
+        games.set(gameId, new Game(gameId, gameName));
 
         callback({okay: true});
     });
