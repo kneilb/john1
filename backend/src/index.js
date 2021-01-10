@@ -16,10 +16,14 @@ const KEY_CIRCLE_RADIUS = GRID_SIZE / 8;
 const KEY_CIRCLE_HOLE_RADIUS = KEY_CIRCLE_RADIUS / 2;
 const GATE_RADIUS = GRID_SIZE / 2;
 
-class Coords {
+class Coordinates {
     constructor(x, y) {
         this.x = x;
         this.y = y;
+    }
+
+    toString() {
+        return `[${this.x},${this.y}]`;
     }
 }
 
@@ -39,7 +43,7 @@ class Land {
         if (this.canSpawn) {
             for (let y = this.y; y < this.y + this.height; ++y) {
                 for (let x = this.x; x < this.x + this.width; ++x) {
-                    coords.push(new Coords(x, y));
+                    coords.push(new Coordinates(x, y));
                 }
             }
         }
@@ -49,7 +53,11 @@ class Land {
 
     on(x, y) {
         return x >= this.x && x < this.x + this.width &&
-               y >= this.y && y < this.y + this.height;
+            y >= this.y && y < this.y + this.height;
+    }
+
+    toString() {
+        return `{Land [${this.x},${this.y}] [${this.width}x${this.height}]}`
     }
 };
 
@@ -64,6 +72,10 @@ class Island extends Land {
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             this.width * GRID_SIZE, this.height * GRID_SIZE
         );
+    }
+
+    static parse(data) {
+        return new Island(data.x, data.y, data.width, data.height, data.canSpawn);
     }
 }
 
@@ -81,6 +93,10 @@ class Platform extends Land {
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             this.width * GRID_SIZE, this.height * GRID_SIZE
         );
+    }
+
+    static parse(data) {
+        return new Platform(data.x, data.y, data.width, data.height);
     }
 }
 
@@ -128,6 +144,10 @@ class Machine {
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             GRID_SIZE, GRID_SIZE
         );
+    }
+
+    toString() {
+        return `{ Machine [${this.x},${this.y}] ${this.colour} }`
     }
 }
 
@@ -208,6 +228,15 @@ class Key extends CanBeCarried {
 
         canvasContext.restore();
     }
+
+    static parse(data, chooseSpawnCoordinates) {
+        if (!Number.isInteger(data.x) || !Number.isInteger(data.y)) {
+            const spawnCoordinates = chooseSpawnCoordinates();
+            data.x = spawnCoordinates.x;
+            data.y = spawnCoordinates.y;
+        }
+        return new Key(data.x, data.y);
+    }
 }
 
 class Gate {
@@ -238,6 +267,15 @@ class Gate {
 
         canvasContext.fillStyle = 'brown';
         canvasContext.fill();
+    }
+
+    static parse(data, keys) {
+        // TODO: colour handling (multi-gate); choose matching keys!
+        return new Gate(data.x, data.y, keys);
+    }
+
+    toString() {
+        return `{Gate [${this.x},${this.y}] keys=${this.keys}}`;
     }
 }
 
@@ -275,6 +313,14 @@ class Ruby extends CanBeCarried {
         canvasContext.strokeStyle = 'black';
         canvasContext.stroke();
     }
+
+    static parse(data) {
+        return new Ruby(data.x, data.y);
+    }
+
+    toString() {
+        return `{Ruby [${this.x},${this.y}]}`;
+    }
 }
 
 class Player {
@@ -295,45 +341,107 @@ class Player {
     }
 }
 
-class Game {
-    constructor(id, name) {
-        this.id = id;
-        this.name = name;
-        this.canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-        this.canvasContext = this.canvas.getContext('2d');
+const DEFAULT_MAP_DATA = [
+    {
+        type: 'island', x: 9, y: 0, width: 6, height: 5, canSpawn: true
+    }, {
+        type: 'platform', x: 3, y: 3, width: 6, height: 1
+    }, {
+        type: 'platform', x: 3, y: 4, width: 1, height: 3
+    }, {
+        type: 'platform', x: 15, y: 3, width: 6, height: 1
+    }, {
+        type: 'platform', x: 20, y: 4, width: 1, height: 3
+    }, {
+        type: 'island', x: 0, y: 7, width: 6, height: 5, canSpawn: true
+    }, {
+        type: 'platform', x: 6, y: 9, width: 12, height: 1
+    }, {
+        type: 'island', x: 18, y: 7, width: 6, height: 5, canSpawn: true
+    }, {
+        type: 'platform', x: 12, y: 10, width: 1, height: 2
+    }, {
+        type: 'island', x: 8, y: 12, width: 8, height: 7, canSpawn: false
+    }, {
+        type: 'ruby', x: 12, y: 15
+    }, {
+        type: 'gate', x: 12, y: 11, colour: 'yellow'
+    }, {
+        type: 'key', colour: 'yellow'
+    }, {
+        type: 'key', colour: 'yellow'
+    }, {
+        type: 'key', colour: 'yellow'
+    }
+]
 
-        this.land = [
-            new Island(9, 0, 6, 5, true),
-            new Platform(3, 3, 6, 1),
-            new Platform(3, 4, 1, 3),
-            new Platform(15, 3, 6, 1),
-            new Platform(20, 4, 1, 3),
-            new Island(0, 7, 6, 5, true),
-            new Platform(6, 9, 12, 1),
-            new Island(18, 7, 6, 5, true),
-            new Platform(12, 10, 1, 2),
-            new Island(8, 12, 8, 7, false)
-        ];
-
-        this.ruby = new Ruby(12, 15);
-
+// TODO: multiple gates
+// TODO: gates that require subset of keys (via colours)
+// TODO: multiple rubies?
+// TODO: forced spawn points of machines
+// TODO: forced spawn points of players
+// TODO: forced spawn points of keys
+class GameMap {
+    constructor() {
+        this.gate = null;
+        this.keys = [];
+        this.land = [];
+        this.machines = new Map();
+        this.players = new Map();
+        this.ruby = null;
         this.spawnCoordinates = [];
+    }
+
+    parseJson(jsonData) {
+        this.parse(JSON.parse(jsonData));
+    }
+
+    parse(mapData) {
+        console.log(mapData);
+        for (const item of mapData) {
+            console.log(item);
+            switch (item.type) {
+                case 'island':
+                    this.land.push(Island.parse(item));
+                    break;
+                case 'platform':
+                    this.land.push(Platform.parse(item));
+                    break;
+                case 'ruby':
+                    this.ruby = Ruby.parse(item);
+                    break;
+            }
+        }
 
         for (let l of this.land) {
             this.spawnCoordinates.push(...l.getSpawnCoordinates());
         }
 
-        this.keys = [];
-        for (let i = 0; i < 3; ++i) {
-            const spawnCoordinates = this.chooseSpawnCoordinates();
-            this.keys.push(new Key(spawnCoordinates.x, spawnCoordinates.y));
+        // 2nd phase; dependencies (spawn coordinates!)
+        for (const item of mapData) {
+            switch (item.type) {
+                case 'key':
+                    this.keys.push(Key.parse(item, () => this.chooseSpawnCoordinates()));
+                    break;
+                case 'machine':
+                    const machine = Machine.parse(item, () => this.chooseSpawnCoordinates());
+                    this.machines.set(machine.id, machine);
+                    break;
+                case 'player':
+                    const player = Player.parse(item, () => this.chooseSpawnCoordinates());
+                    this.players.set(player.id, player);
+                    break;
+            }
         }
 
-        this.gate = new Gate(12, 11, this.keys);
-
-        // TODO: tidy up players that have disconnected (& their machines)...!
-        this.players = new Map();
-        this.machines = new Map();
+        // 3rd phase; dependencies (keys!)
+        for (const item of mapData) {
+            switch (item.type) {
+                case 'gate':
+                    this.gate = Gate.parse(item, this.keys);
+                    break;
+            }
+        }
     }
 
     // Pick coordinates to spawn "something"
@@ -343,6 +451,19 @@ class Game {
         const coords = this.spawnCoordinates[index];
         this.spawnCoordinates.splice(index, 1);
         return coords;
+    }
+}
+
+class Game {
+    constructor(id, name) {
+        this.id = id;
+        this.name = name;
+        this.canvas = require('canvas').createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+        this.canvasContext = this.canvas.getContext('2d');
+
+        this.map = new GameMap();
+        this.map.parse(DEFAULT_MAP_DATA);
+        Object.assign(this, this.map);
     }
 
     redrawPlayingField() {
@@ -376,11 +497,11 @@ class Game {
     }
 
     newPlayer(playerId, socket) {
-        const playerSpawnCoordinates = this.chooseSpawnCoordinates();
+        const playerSpawnCoordinates = this.map.chooseSpawnCoordinates();
         const player = new Player(playerId, socket, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
         this.players.set(playerId, player);
 
-        const machineSpawnCoordinates = this.chooseSpawnCoordinates();
+        const machineSpawnCoordinates = this.map.chooseSpawnCoordinates();
         const machine = new Machine(playerId, machineSpawnCoordinates.x, machineSpawnCoordinates.y, this.ruby);
         this.machines.set(playerId, machine);
 
@@ -466,7 +587,7 @@ class Game {
             if (m.tryWin(player)) {
                 let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
                 console.log(message);
-                io.to(this.id).emit('message');
+                io.to(this.id).emit('message', message);
             }
         }
 
@@ -623,7 +744,7 @@ io.on('connection', (socket) => {
         // TODO: allow JSON to define "map"?
         games.set(gameId, new Game(gameId, gameName));
 
-        callback({okay: true});
+        callback({ okay: true });
     });
 
     socket.on('deleteGame', (gameId, callback) => {
@@ -634,6 +755,6 @@ io.on('connection', (socket) => {
             games.delete(gameId);
         }
 
-        callback({okay: true});
+        callback({ okay: true });
     });
 });
