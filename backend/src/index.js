@@ -2,12 +2,14 @@ import { v4 as uuid } from 'uuid';
 import { Server } from 'socket.io';
 
 import { HTTP_LISTEN_PORT } from './definitions.js';
-import { Game } from './game.js'
+import { Game } from './game.js';
+import * as maps from './mapData.js';
 
 const io = new Server(HTTP_LISTEN_PORT);
 
 let games = new Map();
-games.set('game1', new Game('game1', 'The First Game', io));
+games.set('game1', new Game('game1', 'The First Game', io, maps.LEVEL_1));
+games.set('game2', new Game('game2', 'The Second Game', io, maps.LEVEL_2));
 
 io.on('connection', (socket) => {
     console.log(`User ${socket.id} connected!!`);
@@ -149,8 +151,9 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // TODO: allow JSON to define "map"?
-        games.set(gameId, new Game(gameId, gameName));
+        const mapData = gameData.mapData ? JSON.parse(gameData.mapData) : maps.LEVEL_1;
+
+        games.set(gameId, new Game(gameId, gameName, io, mapData));
 
         callback({ okay: true });
     });

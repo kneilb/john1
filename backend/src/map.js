@@ -2,42 +2,6 @@ import { Gate, Island, Platform } from './land.js';
 import { Key, Ruby } from './items.js';
 import { Player, Machine } from './player.js';
 
-const DEFAULT_MAP_DATA = [
-    {
-        type: 'island', x: 9, y: 0, width: 6, height: 5, canSpawn: true
-    }, {
-        type: 'platform', x: 3, y: 3, width: 6, height: 1
-    }, {
-        type: 'platform', x: 3, y: 4, width: 1, height: 3
-    }, {
-        type: 'platform', x: 15, y: 3, width: 6, height: 1
-    }, {
-        type: 'platform', x: 20, y: 4, width: 1, height: 3
-    }, {
-        type: 'island', x: 0, y: 7, width: 6, height: 5, canSpawn: true
-    }, {
-        type: 'platform', x: 6, y: 9, width: 12, height: 1
-    }, {
-        type: 'island', x: 18, y: 7, width: 6, height: 5, canSpawn: true
-    }, {
-        type: 'platform', x: 12, y: 10, width: 1, height: 2
-    }, {
-        type: 'island', x: 8, y: 12, width: 8, height: 7, canSpawn: false
-    }, {
-        type: 'ruby', x: 12, y: 15
-    }, {
-        type: 'gate', x: 12, y: 11, colour: 'yellow', count: 3
-    }, {
-        type: 'key', colour: 'yellow'
-    }, {
-        type: 'key', colour: 'yellow'
-    }, {
-        type: 'key', colour: 'yellow'
-    }
-]
-
-// TODO: multiple gates
-// TODO: gates that require subset of keys (via colours)
 // TODO: multiple rubies?
 // TODO: forced spawn points of machines
 // TODO: forced spawn points of players
@@ -51,10 +15,6 @@ class GameMap {
         this.players = new Map();
         this.ruby = null;
         this.spawnCoordinates = [];
-    }
-
-    parseJson(jsonData) {
-        this.parse(JSON.parse(jsonData));
     }
 
     parse(mapData) {
@@ -113,4 +73,4 @@ class GameMap {
     }
 }
 
-export { GameMap, DEFAULT_MAP_DATA };
+export { GameMap };

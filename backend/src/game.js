@@ -1,12 +1,12 @@
 import canvas from 'canvas';
 const { createCanvas } = canvas;
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT, X_MIN, X_MAX, Y_MIN, Y_MAX } from './definitions.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './definitions.js';
 import { Player, Machine } from './player.js';
-import { GameMap, DEFAULT_MAP_DATA } from './map.js';
+import { GameMap } from './map.js';
 
 class Game {
-    constructor(id, name, server, mapData = null) {
+    constructor(id, name, server, mapData) {
         this.id = id;
         this.name = name;
         this.server = server;
@@ -15,7 +15,7 @@ class Game {
         this.canvasContext = this.canvas.getContext('2d');
 
         this.map = new GameMap();
-        this.map.parse(mapData ? mapData : DEFAULT_MAP_DATA);
+        this.map.parse(mapData);
 
         Object.assign(this, this.map);
         this.players.clear();
