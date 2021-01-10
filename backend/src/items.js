@@ -36,10 +36,11 @@ class Key extends Item {
     // Dropped on death of player
     // 1 spawns on each player's island
     // Must be taken to the gate to unlock it
-    constructor(x, y) {
+    constructor(x, y, colour) {
         super('key');
         this.x = x;
         this.y = y;
+        this.colour = colour;
     }
 
     draw(canvasContext) {
@@ -53,7 +54,7 @@ class Key extends Item {
             KEY_CIRCLE_RADIUS, 0, Math.PI * 2, false
         );
 
-        canvasContext.fillStyle = 'yellow';
+        canvasContext.fillStyle = this.colour;
         canvasContext.fill();
 
         canvasContext.beginPath();
@@ -76,7 +77,7 @@ class Key extends Item {
         canvasContext.moveTo(KEY_CIRCLE_RADIUS * 7 / 2, KEY_CIRCLE_RADIUS);
         canvasContext.lineTo(KEY_CIRCLE_RADIUS * 7 / 2, KEY_CIRCLE_RADIUS * 2);
 
-        canvasContext.strokeStyle = 'yellow';
+        canvasContext.strokeStyle = this.colour;
         canvasContext.stroke();
 
         canvasContext.restore();
@@ -88,7 +89,7 @@ class Key extends Item {
             data.x = spawnCoordinates.x;
             data.y = spawnCoordinates.y;
         }
-        return new Key(data.x, data.y);
+        return new Key(data.x, data.y, data.colour);
     }
 }
 

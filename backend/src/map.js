@@ -26,7 +26,7 @@ const DEFAULT_MAP_DATA = [
     }, {
         type: 'ruby', x: 12, y: 15
     }, {
-        type: 'gate', x: 12, y: 11, colour: 'yellow'
+        type: 'gate', x: 12, y: 11, colour: 'yellow', count: 3
     }, {
         type: 'key', colour: 'yellow'
     }, {
@@ -44,7 +44,7 @@ const DEFAULT_MAP_DATA = [
 // TODO: forced spawn points of keys
 class GameMap {
     constructor() {
-        this.gate = null;
+        this.gates = [];
         this.keys = [];
         this.land = [];
         this.machines = new Map();
@@ -97,7 +97,7 @@ class GameMap {
         for (const item of mapData) {
             switch (item.type) {
                 case 'gate':
-                    this.gate = Gate.parse(item, this.keys);
+                    this.gates.push(Gate.parse(item, this.keys));
                     break;
             }
         }

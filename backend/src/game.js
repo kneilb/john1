@@ -29,7 +29,9 @@ class Game {
             l.draw(this.canvasContext);
         }
 
-        this.gate.draw(this.canvasContext);
+        for (let g of this.gates) {
+            g.draw(this.canvasContext);
+        }
 
         for (let [_, m] of this.machines) {
             m.draw(this.canvasContext);
@@ -111,21 +113,18 @@ class Game {
     }
 
     tryMove(player, x, y) {
-        if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
-            console.log(`${player.colour}: WANTED TO LEAVE THIS REALITY BEHIND!`);
-            return false;
-        }
-
         if (!this.land.some((l) => l.on(x, y))) {
             console.log(`${player.colour}: TRIED TO FALL OFF THE WORLD!`);
             return false;
         }
 
-        if (this.gate.on(x, y) && !this.gate.canPass(player)) {
-            let message = `NONE SHALL PASS!!!1`;
-            console.log(`${player.colour}: ${message}`);
-            player.socket.emit('message', message);
-            return false;
+        for (let gate of this.gates) {
+            if (gate.on(x, y) && !gate.canPass(player)) {
+                let message = `NONE SHALL PASS YE OLDE ${gate.colour} GATE!!!1`;
+                console.log(`${player.colour}: ${message}`);
+                player.socket.emit('message', message);
+                return false;
+            }
         }
 
         player.x = x;

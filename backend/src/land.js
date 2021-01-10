@@ -87,11 +87,13 @@ class Platform extends Land {
 }
 
 class Gate {
-    // Needs 3 keys to open
+    // Needs N keys to open
     // Leads to the island with the ruby
-    constructor(x, y, keys) {
+    constructor(x, y, colour, count, keys) {
         this.x = x;
         this.y = y;
+        this.colour = colour
+        this.count = count;
         this.keys = keys;
     }
 
@@ -100,25 +102,35 @@ class Gate {
     }
 
     canPass(player) {
-        return this.keys.every((key) => key.player == player);
+        const count = this.keys.reduce((total, key) => total + (key.colour === this.colour && key.player === player), 0);
+        console.log(`${player} has ${count} of the required ${this.count} ${this.colour} keys`);
+        return count >= this.count;
     }
 
     draw(canvasContext) {
+        canvasContext.save();
+        canvasContext.translate(this.x * GRID_SIZE, this.y * GRID_SIZE);
+
         canvasContext.beginPath();
 
         canvasContext.arc(
-            (this.x * GRID_SIZE) + (GRID_SIZE / 2),
-            (this.y * GRID_SIZE) + (GRID_SIZE / 2),
-            GATE_RADIUS, 0, Math.PI * 2, false
+            GRID_SIZE / 2, GRID_SIZE / 2,
+            GATE_RADIUS, Math.PI, 2 * Math.PI, false
         );
+
+        canvasContext.lineTo(GRID_SIZE, GRID_SIZE);
+        canvasContext.lineTo(0, GRID_SIZE);
 
         canvasContext.fillStyle = 'brown';
         canvasContext.fill();
+        canvasContext.strokeStyle = this.colour;
+        canvasContext.stroke();
+
+        canvasContext.restore();
     }
 
     static parse(data, keys) {
-        // TODO: colour handling (multi-gate); choose matching keys!
-        return new Gate(data.x, data.y, keys);
+        return new Gate(data.x, data.y, data.colour, data.count, keys);
     }
 
     toString() {
