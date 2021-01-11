@@ -29,25 +29,25 @@ class Game {
     redrawPlayingField() {
         this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        for (let l of this.land) {
+        for (const l of this.land) {
             l.draw(this.canvasContext);
         }
 
-        for (let g of this.gates) {
+        for (const g of this.gates) {
             g.draw(this.canvasContext);
         }
 
-        for (let [_, m] of this.machines) {
+        for (const [_, m] of this.machines) {
             m.draw(this.canvasContext);
         }
 
-        for (let [_, p] of this.players) {
+        for (const [_, p] of this.players) {
             p.draw(this.canvasContext);
         }
 
         this.ruby.draw(this.canvasContext);
 
-        for (let k of this.keys) {
+        for (const k of this.keys) {
             k.draw(this.canvasContext);
         }
 
@@ -128,7 +128,7 @@ class Game {
             return false;
         }
 
-        for (let gate of this.gates) {
+        for (const gate of this.gates) {
             if (gate.on(x, y) && !gate.canPass(player)) {
                 let message = `NONE SHALL PASS YE OLDE ${gate.colour} GATE!!!1`;
                 console.log(`${player.colour}: ${message}`);
@@ -148,7 +148,7 @@ class Game {
             k.tryMove(player);
         }
 
-        for (let [_, m] of this.machines) {
+        for (const [_, m] of this.machines) {
             if (m.tryWin(player)) {
                 let message = `The cunning player ${player.colour} WON THE GAME!!!1`;
                 console.log(message);

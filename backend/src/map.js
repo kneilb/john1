@@ -32,7 +32,7 @@ class GameMap {
             }
         }
 
-        for (let l of this.land) {
+        for (const l of this.land) {
             this.spawnCoordinates.push(...l.getSpawnCoordinates());
         }
 
