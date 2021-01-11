@@ -67,12 +67,10 @@ class Game {
     }
 
     newPlayer(playerId, socket) {
-        const playerSpawnCoordinates = this.map.chooseSpawnCoordinates();
-        const player = new Player(playerId, socket, playerSpawnCoordinates.x, playerSpawnCoordinates.y);
+        const player = Player.spawn(playerId, socket, this.map);
         this.players.set(playerId, player);
 
-        const machineSpawnCoordinates = this.map.chooseSpawnCoordinates();
-        const machine = new Machine(playerId, machineSpawnCoordinates.x, machineSpawnCoordinates.y, this.ruby);
+        const machine = Machine.spawn(playerId, this.ruby, this.map);
         this.machines.set(playerId, machine);
 
         player.socket.join(this.id);

@@ -26,6 +26,16 @@ class Player {
         return new Player(data.colour, socket, data.x, data.y);
     }
 
+    static spawn(playerId, socket, map) {
+        if (map.players.has(playerId)) {
+            const player = map.players.get(playerId);
+            return new Player(playerId, socket, player.x, player.y);
+        }
+
+        const spawnCoordinates = map.chooseSpawnCoordinates();
+        return new Player(playerId, socket, spawnCoordinates.x, spawnCoordinates.y);
+    }
+
     toString() {
         return this.colour;
     }
@@ -33,7 +43,7 @@ class Player {
 
 class Machine {
     // take the ruby to your machine to win!
-    constructor(colour, x, y, ruby) {
+    constructor(colour, ruby, x, y) {
         this.colour = colour;
         this.x = x;
         this.y = y;
@@ -83,7 +93,17 @@ class Machine {
             data.x = spawnCoordinates.x;
             data.y = spawnCoordinates.y;
         }
-        return new Machine(data.colour, data.x, data.y, ruby);
+        return new Machine(data.colour, ruby, data.x, data.y);
+    }
+
+    static spawn(playerId, ruby, map) {
+        if (map.machines.has(playerId)) {
+            const machine = map.machines.get(playerId);
+            return new Machine(playerId, ruby, machine.x, machine.y);
+        }
+
+        const spawnCoordinates = map.chooseSpawnCoordinates();
+        return new Machine(playerId, ruby, spawnCoordinates.x, spawnCoordinates.y);
     }
 
     toString() {
