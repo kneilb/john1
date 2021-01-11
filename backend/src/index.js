@@ -8,8 +8,14 @@ import * as maps from './mapData.js';
 const io = new Server(HTTP_LISTEN_PORT);
 
 let games = new Map();
-games.set('game1', new Game('game1', 'The First Game', io, maps.LEVEL_1));
-games.set('game2', new Game('game2', 'The Second Game', io, maps.LEVEL_2));
+
+function addGame(id, name, server, map) {
+    games.set(id, new Game(id, name, server, map));
+}
+
+addGame('game1', 'The First Level', io, maps.LEVEL_1);
+addGame('game2', 'The Second Level', io, maps.LEVEL_2);
+addGame('game3', 'Level 42', io, maps.LEVEL_3);
 
 io.on('connection', (socket) => {
     console.log(`User ${socket.id} connected!!`);

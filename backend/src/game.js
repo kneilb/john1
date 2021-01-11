@@ -17,9 +17,13 @@ class Game {
         this.map = new GameMap();
         this.map.parse(mapData);
 
+        // Copies references. Do not .clear() the maps, or we lose the contents in this.map.X, too!
         Object.assign(this, this.map);
-        this.players.clear();
-        this.machines.clear();
+        this.players = new Map();
+        this.machines = new Map();
+
+        console.log(this.map.players);
+        console.log(this.map.machines);
     }
 
     redrawPlayingField() {
@@ -51,7 +55,7 @@ class Game {
     }
 
     getAvailablePlayers() {
-        if (this.map.players.length >= 0) {
+        if (this.map.players.size >= 1) {
             return [...this.map.players.values()].map((player) => player.colour);
         } else {
             return DEFAULT_PLAYERS;

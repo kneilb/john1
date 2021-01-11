@@ -44,12 +44,12 @@ class GameMap {
                     break;
                 case 'machine':
                     const machine = Machine.parse(item, this.ruby, () => this.chooseSpawnCoordinates());
-                    this.machines.set(machine.id, machine);
+                    this.machines.set(machine.colour, machine);
                     break;
                 case 'player':
                     const socket = null; // Socket will be filled in when a player connects.
                     const player = Player.parse(item, socket, () => this.chooseSpawnCoordinates());
-                    this.players.set(player.id, player);
+                    this.players.set(player.colour, player);
                     break;
             }
         }

@@ -25,6 +25,10 @@ class Player {
         }
         return new Player(data.colour, socket, data.x, data.y);
     }
+
+    toString() {
+        return this.colour;
+    }
 }
 
 class Machine {
@@ -79,7 +83,7 @@ class Machine {
             data.x = spawnCoordinates.x;
             data.y = spawnCoordinates.y;
         }
-        return new Player(data.colour, ruby, data.x, data.y);
+        return new Machine(data.colour, data.x, data.y, ruby);
     }
 
     toString() {
