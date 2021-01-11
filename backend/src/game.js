@@ -1,7 +1,7 @@
 import canvas from 'canvas';
 const { createCanvas } = canvas;
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from './definitions.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, DEFAULT_PLAYERS } from './definitions.js';
 import { Player, Machine } from './player.js';
 import { GameMap } from './map.js';
 
@@ -48,6 +48,14 @@ class Game {
         }
 
         this.server.to(this.id).emit('refresh', this.canvas.toDataURL());
+    }
+
+    getAvailablePlayers() {
+        if (this.map.players.length >= 0) {
+            return [...this.map.players.values()].map((player) => player.colour);
+        } else {
+            return DEFAULT_PLAYERS;
+        }
     }
 
     hasPlayer(playerId) {

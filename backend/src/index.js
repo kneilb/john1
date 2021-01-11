@@ -39,6 +39,8 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // TODO: check that player is "allowed" by the map
+
         console.log(`Creating new player: ${playerId}!!`);
 
         game.newPlayer(playerId, socket);
@@ -110,13 +112,9 @@ io.on('connection', (socket) => {
     });
 
     socket.on('getGames', (callback) => {
-        let games_list = [];
+        const gamesList = [...games.values()].map((gameData) => { return { id: gameData.id, name: gameData.name, players: gameData.getAvailablePlayers() }; });
 
-        for (let [gameId, gameData] of games) {
-            games_list.push({ id: gameId, name: gameData.name });
-        }
-
-        callback(games_list);
+        callback(gamesList);
     });
 
     socket.on('createGame', (gameData, callback) => {

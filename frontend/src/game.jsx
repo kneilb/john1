@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+
+// TODO: useContext
 import * as api from './api';
 
 function Action(props) {

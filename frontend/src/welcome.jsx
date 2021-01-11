@@ -1,28 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Input, Radio, Select } from 'antd';
+import { Button, Card, Radio, Select, Space } from 'antd';
 
+import CreateGame from './createGame.jsx';
+
+// TODO: useContext
 import * as api from './api';
 
 const { Option } = Select;
-const { Search } = Input;
 
+// TODO: split out create game & start game as two components
 export default function Welcome(props) {
 
-    const playerOptions = [
-        { label: 'Red', value: 'red' },
-        { label: 'Blue', value: 'blue' },
-        { label: 'Orange', value: 'orange' },
-        { label: 'Purple', value: 'purple' }
-    ];
-
     const [availableGames, setAvailableGames] = useState([]);
+    const [defaultGame, setDefaultGame] = useState();
     const [selectedGame, setSelectedGame] = useState();
-    const [selectedPlayer, setSelectedPlayer] = useState(playerOptions[0].value);
+    const [availablePlayers, setAvailablePlayers] = useState();
+    const [selectedPlayer, setSelectedPlayer] = useState();
 
     async function loadAvailableGames() {
         const games = await api.getGames();
         console.log(games);
         setAvailableGames(games);
+        if (games.length >= 1) {
+            setDefaultGame(games[0].id);
+        }
     }
 
     useEffect(() => {
@@ -30,7 +31,7 @@ export default function Welcome(props) {
         loadAvailableGames();
         const interval = setInterval(() => {
             loadAvailableGames();
-        }, 1000);
+        }, 5000);
 
         // Clean up on unmount
         return () => clearInterval(interval);
@@ -55,47 +56,46 @@ export default function Welcome(props) {
         api.join(selectedPlayer, selectedGame, onAccept, onReject);
     }
 
-    function handleCreateGame(name) {
-        console.log(`I want to create a new game called ${name}`);
-
-        function onAccept() {
-            loadAvailableGames();
-        }
-
-        function onReject(text) {
-            console.error(`Error: ${text}`);
-            //props.onError(id);
-        }
-
-        const gameData = {
-            'name': name
-        };
-
-        api.createGame(gameData, onAccept, onReject);
+    function onGameCreated() {
+        console.log('Successfully created game!');
     }
 
-    let options = [];
-    for (let game of availableGames) {
-        console.log(`adding game ${game.id}`);
-        options.push(<Option key={game.id} value={game.id}>{game.name}</Option>);
+    function onGameCreationFailed(text) {
+        console.error(`Error: ${text}`);
+        // props.onError(id);
+    }
+
+    function handleGameSelected(gameId) {
+        setSelectedGame(gameId);
+        for (const game of availableGames) {
+            if (game.id === gameId) {
+                setAvailablePlayers(game.players);
+                break;
+            }
+        }
     }
 
     return (
         <div>
-            <Search
-                placeholder="enter game name" 
-                onSearch={handleCreateGame} 
-                enterButton='Create Game'
-            />
-            <Radio.Group options={playerOptions} onChange={(e) => setSelectedPlayer(e.target.value)} value={selectedPlayer} />
-            <Select
-                style={{ width: 200 }}
-                onChange={(value) => setSelectedGame(value)}
-                placeholder='Select a game'
-            >
-                {options}
-            </Select>
-            <Button type='primary' onClick={handleStartGame} >Start Game!!!1</Button>
+            <Space direction='vertical' size='middle'>
+                <Card title='Create Game'>
+                    <CreateGame onAccept={onGameCreated} onReject={onGameCreationFailed} />
+                </Card>
+                <Card title='Join Game'>
+                    <Space direction='vertical' size='middle'>
+                        <Select
+                            defaultValue={defaultGame}
+                            onChange={(value) => handleGameSelected(value)}
+                            placeholder='Select a game'
+                            style={{ width: 200 }}
+                        >
+                            {availableGames.map((game) => <Option key={game.id} value={game.id}>{game.name}</Option>)}
+                        </Select>
+                        <Radio.Group options={availablePlayers} onChange={(e) => setSelectedPlayer(e.target.value)} value={selectedPlayer} />
+                        <Button type='primary' onClick={handleStartGame} >Start Game!!!1</Button>
+                    </Space>
+                </Card>
+            </Space>
         </div>
     );
 };

@@ -16,6 +16,15 @@ class Player {
             GRID_SIZE, GRID_SIZE
         );
     }
+
+    static parse(data, socket, chooseSpawnCoordinates) {
+        if (!Number.isInteger(data.x) || !Number.isInteger(data.y)) {
+            const spawnCoordinates = chooseSpawnCoordinates();
+            data.x = spawnCoordinates.x;
+            data.y = spawnCoordinates.y;
+        }
+        return new Player(data.colour, socket, data.x, data.y);
+    }
 }
 
 class Machine {
@@ -62,6 +71,15 @@ class Machine {
             this.x * GRID_SIZE, this.y * GRID_SIZE,
             GRID_SIZE, GRID_SIZE
         );
+    }
+
+    static parse(data, ruby, chooseSpawnCoordinates) {
+        if (!Number.isInteger(data.x) || !Number.isInteger(data.y)) {
+            const spawnCoordinates = chooseSpawnCoordinates();
+            data.x = spawnCoordinates.x;
+            data.y = spawnCoordinates.y;
+        }
+        return new Player(data.colour, ruby, data.x, data.y);
     }
 
     toString() {

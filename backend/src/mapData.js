@@ -29,6 +29,12 @@ const LEVEL_1 = [
         type: 'key', colour: 'yellow'
     }, {
         type: 'key', colour: 'yellow'
+    }, {
+        type: 'player', colour: 'red'
+    }, {
+        type: 'player', colour: 'purple'
+    }, {
+        type: 'player', colour: 'orange'
     }
 ]
 

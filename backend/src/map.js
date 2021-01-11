@@ -36,18 +36,19 @@ class GameMap {
             this.spawnCoordinates.push(...l.getSpawnCoordinates());
         }
 
-        // 2nd pass; dependencies (spawn coordinates!)
+        // 2nd pass; dependencies (spawn coordinates, ruby)
         for (const item of mapData) {
             switch (item.type) {
                 case 'key':
                     this.keys.push(Key.parse(item, () => this.chooseSpawnCoordinates()));
                     break;
                 case 'machine':
-                    const machine = Machine.parse(item, () => this.chooseSpawnCoordinates());
+                    const machine = Machine.parse(item, this.ruby, () => this.chooseSpawnCoordinates());
                     this.machines.set(machine.id, machine);
                     break;
                 case 'player':
-                    const player = Player.parse(item, () => this.chooseSpawnCoordinates());
+                    const socket = null; // Socket will be filled in when a player connects.
+                    const player = Player.parse(item, socket, () => this.chooseSpawnCoordinates());
                     this.players.set(player.id, player);
                     break;
             }
