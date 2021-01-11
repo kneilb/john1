@@ -5,7 +5,7 @@ const socket = io();
 function join(playerId, gameId, onAccept, onReject) {
     socket.emit('join', playerId, gameId, (response) => {
         if (response.okay) {
-            onAccept();
+            onAccept(playerId);
         }
         else {
             onReject(response.text);

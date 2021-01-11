@@ -6,12 +6,13 @@ import Welcome from './welcome.jsx'
 export default function App(props) {
     const [playerId, setPlayerId] = useState();
 
-    function handleSelect(id) {
+    function handleJoin(id) {
         setPlayerId(id);
     }
 
-    function handleSelectError(id) {
+    function handleJoinError(id) {
         // TODO
+        console.log('You were rejected :(')
     }
 
     function handleExit() {
@@ -21,6 +22,6 @@ export default function App(props) {
     return (
         playerId ?
             <Game onExit={handleExit} playerId={playerId} /> :
-            <Welcome onSelect={handleSelect} onError={handleSelectError} />
+            <Welcome onJoin={handleJoin} onJoinError={handleJoinError} />
     );
 }
