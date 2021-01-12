@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Radio, Select } from 'antd';
+import { Button, Radio, Select, Space } from 'antd';
 
 // TODO: useContext
 import * as api from './api';
@@ -9,7 +9,6 @@ const { Option } = Select;
 export default function JoinGame(props) {
 
     const [availableGames, setAvailableGames] = useState([]);
-    const [defaultGame, setDefaultGame] = useState();
     const [selectedGame, setSelectedGame] = useState();
     const [availablePlayers, setAvailablePlayers] = useState([]);
     const [selectedPlayer, setSelectedPlayer] = useState();
@@ -18,8 +17,10 @@ export default function JoinGame(props) {
         const games = await api.getGames();
         console.log(games);
         setAvailableGames(games);
-        if (games.length >= 1) {
-            setDefaultGame(games[0].id);
+
+        // TODO: handle selectedGame no longer being available
+        if (!selectedGame && games.length >= 1) {
+            handleGameSelected(games[0].id);
         }
     }
 
@@ -32,45 +33,45 @@ export default function JoinGame(props) {
 
         // Clean up on unmount
         return () => clearInterval(interval);
+
+        // We really do only want this to only run once on mount
+        // eslint-disable-next-line
     }, []);
 
     function handleStartGame() {
         console.log(`I want to play as ${selectedPlayer}`);
 
-        // TODO: can ignore rejection & just carry on, taking control of the existing player!!
-        // TODO: The "feature" outlined above is kinda handy for testing - hence the commented out code.
-        // TODO: add auth via a randomly generated cookie, or just use the socket.io connection?
         api.join(selectedPlayer, selectedGame, props.onJoin, props.onError);
     }
 
     function handleGameSelected(gameId) {
         setSelectedGame(gameId);
-        // TODO: Array.find()
-        for (const game of availableGames) {
-            if (game.id === gameId) {
-                setAvailablePlayers(game.players);
+        const game = availableGames.find((g) => g.id === gameId);
+        if (game) {
+            setAvailablePlayers(game.players);
 
-                // TODO: This doesn't _quite_ work, we're always one click behind!
-                if (!availablePlayers.includes(selectedPlayer)) {
-                    setSelectedPlayer(game.players[0]);
-                }
-                break;
+            if (!game.players.includes(selectedPlayer)) {
+                setSelectedPlayer(game.players[0]);
             }
         }
     }
 
     return (
-        <>
+        <Space direction='vertical' size='middle'>
             <Select
-                defaultValue={defaultGame}
                 onChange={(value) => handleGameSelected(value)}
                 placeholder='Select a game'
                 style={{ width: 200 }}
+                value={selectedGame}
             >
-                {availableGames.map((game) => <Option key={game.id} value={game.id}>{game.name}</Option>)}
+                {availableGames.map(({ id, name }) => <Option key={id} value={id}>{name}</Option>)}
             </Select>
-            <Radio.Group options={availablePlayers} onChange={(e) => setSelectedPlayer(e.target.value)} value={selectedPlayer} />
-            <Button type='primary' onClick={handleStartGame} >Start Game!!!1</Button>
-        </>
+            <Radio.Group name='players' onChange={(e) => setSelectedPlayer(e.target.value)} value={selectedPlayer}>
+                {availablePlayers.map((id) => <Radio key={id} value={id}>{id}</Radio>)}
+            </Radio.Group>
+            <Button type='primary' onClick={handleStartGame}>
+                Start Game!!!1
+            </Button>
+        </Space>
     );
 }

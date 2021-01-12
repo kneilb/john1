@@ -1,9 +1,9 @@
 import canvas from 'canvas';
 const { createCanvas } = canvas;
 
-import { CANVAS_WIDTH, CANVAS_HEIGHT, DEFAULT_PLAYERS } from './definitions.js';
-import { Player, Machine } from './player.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './definitions.js';
 import { GameMap } from './map.js';
+import { Player, Machine } from './player.js';
 
 class Game {
     constructor(id, name, server, mapData) {
@@ -17,13 +17,8 @@ class Game {
         this.map = new GameMap();
         this.map.parse(mapData);
 
-        // Copies references. Do not .clear() the maps, or we lose the contents in this.map.X, too!
-        Object.assign(this, this.map);
-        this.players = new Map();
-        this.machines = new Map();
-
-        console.log(this.map.players);
-        console.log(this.map.machines);
+        // Deep copy Game data into Game post-parse
+        GameMap.assign(this, this.map);
     }
 
     redrawPlayingField() {
@@ -55,15 +50,15 @@ class Game {
     }
 
     getAvailablePlayers() {
-        if (this.map.players.size >= 1) {
-            return [...this.map.players.values()].map((player) => player.colour);
-        } else {
-            return DEFAULT_PLAYERS;
-        }
+        return [...this.map.players.values()].map((player) => player.colour);
     }
 
     hasPlayer(playerId) {
         return this.players.has(playerId);
+    }
+
+    playerValid(playerId) {
+        return this.map.players.has(playerId);
     }
 
     newPlayer(playerId, socket) {

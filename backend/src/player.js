@@ -27,13 +27,13 @@ class Player {
     }
 
     static spawn(playerId, socket, map) {
-        if (map.players.has(playerId)) {
-            const player = map.players.get(playerId);
-            return new Player(playerId, socket, player.x, player.y);
+        if (!map.players.has(playerId)) {
+            console.error(`Attempted to spawn player ${playerId}, which is not present in the map!`);
+            return null;
         }
 
-        const spawnCoordinates = map.chooseSpawnCoordinates();
-        return new Player(playerId, socket, spawnCoordinates.x, spawnCoordinates.y);
+        const player = map.players.get(playerId);
+        return new Player(playerId, socket, player.x, player.y);
     }
 
     toString() {
@@ -97,13 +97,13 @@ class Machine {
     }
 
     static spawn(playerId, ruby, map) {
-        if (map.machines.has(playerId)) {
-            const machine = map.machines.get(playerId);
-            return new Machine(playerId, ruby, machine.x, machine.y);
+        if (!map.machines.has(playerId)) {
+            console.error(`Attempted to spawn machine ${playerId}, which is not present in the map!`);
+            return null;
         }
 
-        const spawnCoordinates = map.chooseSpawnCoordinates();
-        return new Machine(playerId, ruby, spawnCoordinates.x, spawnCoordinates.y);
+        const machine = map.machines.get(playerId);
+        return new Machine(playerId, ruby, machine.x, machine.y);
     }
 
     toString() {

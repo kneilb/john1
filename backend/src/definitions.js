@@ -1,7 +1,7 @@
 const CANVAS_WIDTH = 1024;
 const CANVAS_HEIGHT = 768;
 
-const DEFAULT_PLAYERS = ['red', 'blue', 'pink', 'brown'];
+const DEFAULT_PLAYERS = ['red', 'blue', 'orange'];
 
 const GRID_SIZE = 40;
 

@@ -45,7 +45,12 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // TODO: check that player is "allowed" by the map
+        if (!game.playerValid(playerId)) {
+            const text = `Requested to join as player ${playerId}, which not valid for this game!`;
+            console.log(`join: ${text}`);
+            callback({ okay: false, text: text });
+            return;
+        }
 
         console.log(`Creating new player: ${playerId}!!`);
 

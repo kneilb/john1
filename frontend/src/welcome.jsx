@@ -23,9 +23,7 @@ export default function Welcome(props) {
                     <CreateGame onAccept={onGameCreated} onReject={onGameCreationFailed} />
                 </Card>
                 <Card title='Join Game'>
-                    <Space direction='vertical' size='middle'>
-                        <JoinGame onJoin={props.onJoin} onError={props.onJoinError} />
-                    </Space>
+                    <JoinGame onJoin={props.onJoin} onError={props.onJoinError} />
                 </Card>
             </Space>
         </div>

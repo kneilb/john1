@@ -1,11 +1,9 @@
-import { Gate, Island, Platform } from './land.js';
+import { DEFAULT_PLAYERS } from './definitions.js';
 import { Key, Ruby } from './items.js';
+import { Gate, Island, Platform } from './land.js';
 import { Player, Machine } from './player.js';
 
 // TODO: multiple rubies?
-// TODO: forced spawn points of machines
-// TODO: forced spawn points of players
-// TODO: forced spawn points of keys
 class GameMap {
     constructor() {
         this.gates = [];
@@ -62,6 +60,34 @@ class GameMap {
                     break;
             }
         }
+
+        // Create default players & machines if none were specified
+        if (this.machines.size === 0) {
+            for (const c of DEFAULT_PLAYERS) {
+                const item = { colour: c };
+                const machine = Machine.parse(item, this.ruby, () => this.chooseSpawnCoordinates());
+                this.machines.set(machine.colour, machine);
+            }
+        }
+        if (this.players.size === 0) {
+            for (const c of DEFAULT_PLAYERS) {
+                const item = { colour: c };
+                const player = Player.parse(item, null, () => this.chooseSpawnCoordinates());
+                this.players.set(player.colour, player);
+            }
+        }
+    }
+
+    static assign(target, source) {
+        target.gates = [...source.gates];
+        target.keys = [...source.keys];
+        target.land = [...source.land];
+        target.ruby = new Ruby(source.ruby.x, source.ruby.y);
+
+        target.machines = new Map();
+        target.players = new Map();
+
+        return target;
     }
 
     // Pick coordinates to spawn "something"

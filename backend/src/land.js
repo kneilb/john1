@@ -103,7 +103,7 @@ class Gate {
 
     canPass(player) {
         const count = this.keys.reduce((total, key) => total + (key.colour === this.colour && key.player === player), 0);
-        console.log(`${player} has ${count} of the required ${this.count} ${this.colour} keys`);
+        console.log(`gate: ${player} has ${count} of the required ${this.count} ${this.colour} keys`);
         return count >= this.count;
     }
 
