@@ -15,7 +15,6 @@ function addGame(id, name, server, map) {
 
 addGame('game1', 'The First Level', io, maps.LEVEL_1);
 addGame('game2', 'The Second Level', io, maps.LEVEL_2);
-addGame('game3', 'Level 42', io, maps.LEVEL_3);
 
 io.on('connection', (socket) => {
     console.log(`User ${socket.id} connected!!`);
