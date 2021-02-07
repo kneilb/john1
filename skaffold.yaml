@@ -1,0 +1,28 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+metadata:
+  name: john-
+build:
+  artifacts:
+  - image: backend
+    context: backend
+    docker:
+      dockerfile: Dockerfile
+  - image: frontend
+    context: frontend
+    docker:
+      dockerfile: Dockerfile
+  - image: nginx
+    context: nginx
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - backend/deployment.yaml
+    - frontend/deployment.yaml
+    - nginx/deployment.yaml
+portForward:
+- resourceType: service
+  resourceName: nginx
+  port: 80
